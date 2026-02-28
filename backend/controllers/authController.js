@@ -244,61 +244,7 @@ export const deleteAccount = async (req, res) => {
     }
 };
 
-// @desc    Auth user with Google OAuth
-// @route   POST /api/auth/google
-// @access  Public
-export const googleLogin = async (req, res) => {
-    try {
-        const { email, name, picture } = req.body;
 
-        // Check if user exists in auth
-        const { data: existingUsers } = await supabase.auth.admin.listUsers();
-        const existingUser = existingUsers?.users?.find(u => u.email === email);
-
-        let userId;
-        if (!existingUser) {
-            const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-                email,
-                email_confirm: true,
-                user_metadata: { full_name: name, avatar_url: picture }
-            });
-            if (createError) return res.status(400).json({ message: createError.message });
-            userId = newUser.user.id;
-
-            // Update profile
-            await supabase.from('profiles')
-                .update({ full_name: name, avatar_url: picture })
-                .eq('id', userId);
-        } else {
-            userId = existingUser.id;
-            // Update avatar if changed
-            if (picture) {
-                await supabase.from('profiles').update({ avatar_url: picture }).eq('id', userId);
-            }
-        }
-
-        // Generate magic link session (OTP approach for Google)
-        const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-            type: 'magiclink',
-            email,
-        });
-
-        if (linkError) return res.status(500).json({ message: linkError.message });
-
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
-
-        return res.json({
-            id: userId,
-            email,
-            name: profile?.full_name || name,
-            avatar_url: profile?.avatar_url || picture,
-            // Note: For Google OAuth, the frontend should use Supabase client-side OAuth directly
-            message: 'Google login: use Supabase client-side OAuth for full session support',
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
 
 // @desc    Search for users
 // @route   GET /api/auth/users/search

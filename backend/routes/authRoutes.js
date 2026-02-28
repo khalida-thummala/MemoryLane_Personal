@@ -1,6 +1,6 @@
 import express from 'express';
 import {
-    registerUser, loginUser, googleLogin,
+    registerUser, loginUser,
     getUserProfile, refreshAccessToken, logoutUser,
     updateUserProfile, changePassword, deleteAccount,
     searchUsers, followUser, unfollowUser
@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.post('/register', registerUser);
 router.post('/login', loginUser);
-router.post('/google', googleLogin);
+
 router.post('/refresh', refreshAccessToken);
 
 router.post('/logout', protect, logoutUser);

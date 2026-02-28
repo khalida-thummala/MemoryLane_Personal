@@ -101,7 +101,7 @@ npm run dev
 
 - **Deployment Link:** [Project URL Placeholder] (Add your hosted link here)
 - **Backend API Link:** `https://memorylane-personal.onrender.com`
-- **Video Walkthrough:** [Demo Video Placeholder] (Add your Loom/YouTube link here)
+- **Video Walkthrough:** https://drive.google.com/file/d/1bGCeQwjSs8WGnQ7oiTcPbq8ExmYGToiy/view?usp=sharing
 
 ## 🔑 Login Credentials (Testing)
 - **Email:** `test@example.com`

@@ -1,8 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { GoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from 'jwt-decode';
+
 import { authService } from '../services/api';
 import { Button } from '../components/ui/Button';
 import axios from 'axios';
@@ -18,24 +17,7 @@ const Register = () => {
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const handleGoogleSuccess = async (credentialResponse) => {
-        try {
-            const decoded = jwtDecode(credentialResponse.credential);
 
-            // Using the same endpoint as login, which creates the user if they don't exist
-            const { data } = await axios.post('/api/auth/google', {
-                email: decoded.email,
-                name: decoded.name,
-                picture: decoded.picture
-            });
-
-            login(data);
-            navigate('/timeline');
-        } catch (err) {
-            console.error(err);
-            setError('Google sign up failed. Please try again.');
-        }
-    };
 
     const submitHandler = async (e) => {
         e.preventDefault();
@@ -64,22 +46,7 @@ const Register = () => {
                 {error && <div className="mb-4 text-red-500 text-sm text-center font-medium bg-red-500/10 py-2 rounded-lg">{error}</div>}
                 {success && <div className="mb-4 text-green-600 text-sm text-center font-medium bg-green-500/10 py-2 rounded-lg">{success}</div>}
 
-                <div className="flex justify-center mb-6">
-                    <GoogleLogin
-                        onSuccess={handleGoogleSuccess}
-                        onError={() => setError('Google Sign Up Failed')}
-                        text="signup_with"
-                    />
-                </div>
 
-                <div className="relative mb-6">
-                    <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-transparent text-gray-500 glass-panel rounded-full">Or continue with email</span>
-                    </div>
-                </div>
 
                 <form onSubmit={submitHandler} className="flex flex-col gap-4">
                     <div>

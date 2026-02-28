@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { authService } from '../services/api';
 import { Button } from '../components/ui/Button';
 import { supabase } from '../services/supabase';
-import { LogIn, Mail, Lock, Chrome } from 'lucide-react';
+import { LogIn, Mail, Lock } from 'lucide-react';
 
 const Login = () => {
     const { login } = useContext(AuthContext);
@@ -15,20 +15,7 @@ const Login = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const handleGoogleLogin = async () => {
-        try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: window.location.origin + '/timeline'
-                }
-            });
-            if (error) throw error;
-        } catch (err) {
-            console.error(err);
-            setError('Google login failed: ' + err.message);
-        }
-    };
+
 
     const handleStandardSubmit = async (e) => {
         e.preventDefault();
@@ -65,22 +52,7 @@ const Login = () => {
                         </div>
                     )}
 
-                    <button
-                        onClick={handleGoogleLogin}
-                        className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 py-4 rounded-2xl font-black text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm hover:shadow-md mb-8"
-                    >
-                        <Chrome className="text-indigo-500" />
-                        Continue with Google
-                    </button>
 
-                    <div className="relative mb-8">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
-                        </div>
-                        <div className="relative flex justify-center text-xs">
-                            <span className="px-4 bg-white dark:bg-slate-900 text-slate-400 font-black uppercase tracking-widest rounded-full">Or use email</span>
-                        </div>
-                    </div>
 
                     <form onSubmit={handleStandardSubmit} className="flex flex-col gap-5">
                         <div className="relative">
