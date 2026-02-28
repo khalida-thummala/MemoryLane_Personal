@@ -87,7 +87,7 @@ graph TD
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-repo/MemoryLane_Personal.git
+   git clone https://github.com/khalida-thummala/MemoryLane_Personal.git
    ```
 
 2. **Setup Backend:**
