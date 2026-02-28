@@ -10,7 +10,7 @@ MemoryLane is a sophisticated, full-stack application designed to preserve, orga
 | :--- | :--- |
 | **🚀 Live Demo** | [https://memorylane-frontend.netlify.app/](https://memorylane-frontend.netlify.app/) |
 | **🎥 Video Walkthrough** | [Google Drive Walkthrough](https://drive.google.com/file/d/1bGCeQwjSs8WGnQ7oiTcPbq8ExmYGToiy/view?usp=sharing) |
-| **⚙️ Backend API** | `https://memorylane-personal.onrender.com` |
+| **⚙️ Backend API** | https://memorylane-personal.onrender.com |
 | **📑 Documentation** | [Database Schema](./DATABASE_SCHEMA.md) |
 
 ---
