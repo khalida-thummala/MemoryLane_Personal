@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Base API setup
 const api = axios.create({
-    baseURL: '', // Using proxy defined in vite.config.js
+    baseURL: import.meta.env.VITE_API_URL || '', // Empty for local proxy, production URL for deployed app
 });
 
 // Authentication services

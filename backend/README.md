@@ -93,7 +93,7 @@ MemoryLane uses a normalized relational schema in Supabase.
 
 ### Deployment
 - **Platform:** Optimized for Heroku, Railway, or Render.
-- **Link:** [Backend API URL Placeholder]
+- **Link:** `https://memorylane-personal.onrender.com`
 
 ---
 
