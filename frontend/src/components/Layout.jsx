@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Sun, Moon, LogIn, UserPlus, Menu, X, Home, Clock, Image, Map as ReminisceIcon, User, LogOut, Globe, Users } from 'lucide-react';
+import { Sun, Moon, LogIn, UserPlus, Menu, X, Home, Clock, Image, Map as ReminisceIcon, User, LogOut, Globe, Users, Linkedin, Github, Mail } from 'lucide-react';
 import { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
@@ -161,8 +161,26 @@ const Layout = ({ children }) => {
 
                 {/* Footer */}
                 <footer className="glass-panel mt-auto py-8 border-t border-black/5 dark:border-white/5">
-                    <div className="max-w-7xl mx-auto px-4 text-center text-sm opacity-70">
-                        &copy; {new Date().getFullYear()} MemoryLane Personal. Preserving memories securely.
+                    <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4 text-sm opacity-70">
+                        <div className="flex items-center gap-2">
+                            Crafted with <span className="text-red-500 mx-1 animate-pulse">❤️</span> by <span className="font-semibold text-indigo-600 dark:text-indigo-400">Khalida Thummala</span>
+                        </div>
+
+                        <div className="flex items-center gap-6">
+                            <a href="https://www.linkedin.com/in/khalida-thummala/" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="LinkedIn">
+                                <Linkedin size={20} />
+                            </a>
+                            <a href="https://github.com/khalida-thummala/" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="GitHub">
+                                <Github size={20} />
+                            </a>
+                            <a href="mailto:khalidathummla38@gmail.com" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Gmail">
+                                <Mail size={20} />
+                            </a>
+                        </div>
+
+                        <div className="text-xs opacity-50">
+                            &copy; {new Date().getFullYear()} MemoryLane. All rights reserved.
+                        </div>
                     </div>
                 </footer>
             </div>
