@@ -11,16 +11,17 @@ const Layout = ({ children }) => {
     const { theme, toggleTheme } = useContext(ThemeContext);
     const navigate = useNavigate();
     const location = useLocation();
-    const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
+    const isHomePage = location.pathname === '/';
+    const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024 && !isHomePage);
 
     const handleLogout = () => {
         logout();
-        if (window.innerWidth < 1024) setIsSidebarOpen(false);
+        setIsSidebarOpen(false);
         navigate('/'); // Redirect to landing page on logout
     };
 
     const handleLinkClick = () => {
-        if (window.innerWidth < 1024) {
+        if (window.innerWidth < 1024 || isHomePage) {
             setIsSidebarOpen(false);
         }
     };
@@ -52,9 +53,9 @@ const Layout = ({ children }) => {
             {/* Left Sidebar Drawer */}
             <aside className={`fixed top-0 left-0 h-full w-72 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 shadow-2xl z-[70] transform transition-transform duration-300 ease-in-out flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <div className="p-6 flex items-center justify-between border-b border-gray-100 dark:border-slate-800">
-                    <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
+                    <Link to={user ? "/timeline" : "/"} onClick={handleLinkClick} className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
                         MemoryLane
-                    </span>
+                    </Link>
                     <button onClick={() => setIsSidebarOpen(false)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
                         <X size={24} className="text-gray-500" />
                     </button>
@@ -65,7 +66,7 @@ const Layout = ({ children }) => {
                         <div className="flex items-center justify-center py-10 opacity-50">
                             <Clock className="animate-spin" />
                         </div>
-                    ) : user ? (
+                    ) : (user && !isHomePage) ? (
                         <>
                             <div className="mb-6 px-4 py-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
@@ -105,14 +106,19 @@ const Layout = ({ children }) => {
                             </Link>
                         </>
                     ) : (
-                        <div className="text-center opacity-60 text-sm py-4">
-                            Please login to access your memories.
+                        <div className="text-center opacity-60 text-sm py-4 space-y-4">
+                            <p>Capture the sights, sounds, and feelings of right now—forever.</p>
+                            {user && isHomePage && (
+                                <Link to="/timeline" className="block p-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-bold">
+                                    Go to My Dashboard
+                                </Link>
+                            )}
                         </div>
                     )}
                 </div>
 
                 <div className="p-6 border-t border-gray-100 dark:border-slate-800 flex flex-col gap-3">
-                    {user ? (
+                    {user && !isHomePage ? (
                         <>
                             <Link to="/profile" onClick={handleLinkClick} className={navLinkClass('/profile')}>
                                 {activeIndicator('/profile')}
@@ -136,7 +142,7 @@ const Layout = ({ children }) => {
             </aside>
 
             {/* Main Wrapper */}
-            <div className={`flex-1 flex flex-col min-h-screen w-full transition-all duration-300 ${isSidebarOpen ? 'lg:pl-72' : ''}`}>
+            <div className={`flex-1 flex flex-col min-h-screen w-full transition-all duration-300 ${(isSidebarOpen && !isHomePage) ? 'lg:pl-72' : ''}`}>
                 {/* Navigation Bar */}
                 <nav className="glass-panel sticky top-0 z-50 px-6 py-4 border-b border-black/5 dark:border-white/5 flex justify-between items-center shadow-sm">
                     <div className="flex items-center gap-4">
@@ -147,7 +153,7 @@ const Layout = ({ children }) => {
                         >
                             <Menu size={24} className="text-indigo-600 dark:text-indigo-400" />
                         </button>
-                        <Link to="/" className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600 hidden sm:block">
+                        <Link to={user ? "/timeline" : "/"} className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600 hidden sm:block">
                             MemoryLane
                         </Link>
                     </div>
@@ -161,17 +167,25 @@ const Layout = ({ children }) => {
                             {theme === 'dark' ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-slate-700" />}
                         </button>
 
-                        {user && <NotificationDropdown />}
+                        {user && !isHomePage && <NotificationDropdown />}
 
                         <div className="flex gap-3">
-                            {!user && (
+                            {(isHomePage || !user) && (
                                 <>
-                                    <Link to="/login" className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors font-medium">
-                                        <LogIn size={18} /> Login
-                                    </Link>
-                                    <Link to="/register" className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-600/20 font-medium">
-                                        <UserPlus size={18} /> Sign Up
-                                    </Link>
+                                    {user ? (
+                                        <Link to="/timeline" className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-600/20 font-medium">
+                                            My Dashboard
+                                        </Link>
+                                    ) : (
+                                        <>
+                                            <Link to="/login" className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors font-medium">
+                                                <LogIn size={18} /> Login
+                                            </Link>
+                                            <Link to="/register" className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-600/20 font-medium">
+                                                <UserPlus size={18} /> Sign Up
+                                            </Link>
+                                        </>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -179,7 +193,7 @@ const Layout = ({ children }) => {
                 </nav>
 
                 {/* Main Content Area */}
-                <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <main className={`flex-1 w-full mx-auto py-8 ${isHomePage ? '' : 'max-w-7xl px-4 sm:px-6 lg:px-8'}`}>
                     {children}
                 </main>
 

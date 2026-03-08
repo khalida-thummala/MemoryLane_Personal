@@ -3,6 +3,9 @@ import { Sparkles, MapPin, Video, Play, Music, Lock, Heart, ChevronRight } from 
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { useContext, useEffect } from 'react';
+import { AuthContext } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const FeatureCard = ({ icon: Icon, title, description, delay }) => (
     <motion.div
@@ -26,6 +29,15 @@ const FeatureCard = ({ icon: Icon, title, description, delay }) => (
 );
 
 const Home = () => {
+    const { user } = useContext(AuthContext);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (user) {
+            navigate('/timeline');
+        }
+    }, [user, navigate]);
+
     return (
         <div className="flex flex-col gap-24 overflow-hidden">
             {/* Hero Section */}
