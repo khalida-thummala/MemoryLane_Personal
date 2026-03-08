@@ -21,11 +21,11 @@ const SharedAlbums = () => {
     const [editData, setEditData] = useState({ title: '', description: '', is_shared: true });
 
     const getAlbumCover = (album) => {
-        if (album.coverImage) return album.coverImage;
-        if (album.cover_url) return album.cover_url;
+        if (album.coverImage) return getMediaUrl(album.coverImage);
+        if (album.cover_url) return getMediaUrl(album.cover_url);
         if (album.memories && album.memories.length > 0) {
             const memWithPhoto = album.memories.find(m => m?.photos?.length > 0);
-            if (memWithPhoto) return memWithPhoto.photos[0];
+            if (memWithPhoto) return getMediaUrl(memWithPhoto.photos[0]);
         }
         return null;
     };

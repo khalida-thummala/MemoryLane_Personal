@@ -12,10 +12,10 @@ const Albums = () => {
     const [albums, setAlbums] = useState([]);
 
     const getAlbumCover = (album) => {
-        if (album.coverImage) return album.coverImage;
+        if (album.coverImage) return getMediaUrl(album.coverImage);
         if (album.memories && album.memories.length > 0) {
             const memoryWithDocs = album.memories.find(m => m && m.photos && m.photos.length > 0);
-            if (memoryWithDocs) return memoryWithDocs.photos[0];
+            if (memoryWithDocs) return getMediaUrl(memoryWithDocs.photos[0]);
         }
         return null;
     };

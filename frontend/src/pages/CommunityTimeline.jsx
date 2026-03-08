@@ -19,7 +19,7 @@ const Avatar = ({ user, size = 'md' }) => {
     return (
         <div className={`${sizes[size]} rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold shrink-0 overflow-hidden ring-2 ring-white dark:ring-slate-900`}>
             {user?.avatar_url || user?.avatar
-                ? <img src={user.avatar_url || user.avatar} alt={letter} className="w-full h-full object-cover" />
+                ? <img src={getMediaUrl(user.avatar_url || user.avatar)} alt={letter} className="w-full h-full object-cover" />
                 : letter}
         </div>
     );

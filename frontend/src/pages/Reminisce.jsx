@@ -9,14 +9,15 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import ShareOptions from '../components/ShareOptions';
 import html2canvas from 'html2canvas';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 // --- Story Viewer / Modal Component ---
 const StoryViewer = ({ story, onClose }) => {
     // Total steps = all photos + 1 final summary slide
     const extractUrl = (p) => {
         if (!p) return null;
-        if (typeof p === 'string') return p;
-        return p.url || p.path || p.src || p.secure_url || null;
+        const url = typeof p === 'string' ? p : (p.url || p.path || p.src || p.secure_url);
+        return getMediaUrl(url);
     };
 
     // Support both cluster highlights (memories) and saved video previews (photos)
@@ -408,7 +409,7 @@ const AIMemoryCard = ({ m, idx, user, selectedPhotos, onTogglePhoto, onLike }) =
                 {m.photos && m.photos.length > 0 ? (
                     <div onClick={() => onTogglePhoto(m.photos[0])} className="relative w-full h-full cursor-pointer">
                         <img
-                            src={m.photos[0]}
+                            src={getMediaUrl(m.photos[0])}
                             className={`w-full h-full object-cover transition-all duration-700 ${selectedPhotos.includes(m.photos[0]) ? 'brightness-50' : 'group-hover:scale-110'}`}
                             alt={m.title}
                             crossOrigin="anonymous"

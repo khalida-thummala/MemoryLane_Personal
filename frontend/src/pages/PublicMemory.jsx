@@ -103,8 +103,8 @@ const PublicMemory = () => {
                         <div className="mt-10 border-t border-gray-100 dark:border-slate-700 pt-8">
                             <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Media Preserved</h3>
                             <div className="flex flex-col gap-4">
-                                {memory.videos?.map((v, i) => <video key={i} src={v} controls className="w-full rounded-2xl shadow-md" />)}
-                                {memory.voiceNotes?.map((v, i) => <audio key={i} src={v} controls className="w-full h-14 bg-indigo-50 dark:bg-indigo-900/20 rounded-full px-4" />)}
+                                {memory.videos?.map((v, i) => <video key={i} src={getMediaUrl(v)} controls className="w-full rounded-2xl shadow-md" />)}
+                                {memory.voiceNotes?.map((v, i) => <audio key={i} src={getMediaUrl(v)} controls className="w-full h-14 bg-indigo-50 dark:bg-indigo-900/20 rounded-full px-4" />)}
                             </div>
                         </div>
                     )}

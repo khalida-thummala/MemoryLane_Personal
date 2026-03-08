@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Plus, Image as ImageIcon, Video, Mic, MapPin, Tag, Calendar, X, Heart, Edit3, Trash2, Search, File, Star, Share2, Globe, Lock, ChevronLeft, Users } from 'lucide-react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 // Custom hook for debouncing search input
 function useDebounce(value, delay) {
@@ -94,9 +95,9 @@ const Timeline = () => {
                         likes: m.likes || [],
                         commentCount: m.commentCount || 0,
                         attachedFiles: [
-                            ...(m.photos ? m.photos.map((photo, i) => ({ name: `Image ${i + 1}`, url: photo, type: 'image/jpeg' })) : []),
-                            ...(m.videos ? m.videos.map((video, i) => ({ name: `Video ${i + 1}`, url: video, type: 'video/mp4' })) : []),
-                            ...(m.voiceNotes ? m.voiceNotes.map((audio, i) => ({ name: `Audio ${i + 1}`, url: audio, type: 'audio/mpeg' })) : [])
+                            ...(m.photos ? m.photos.map((photo, i) => ({ name: `Image ${i + 1}`, url: getMediaUrl(photo), type: 'image/jpeg' })) : []),
+                            ...(m.videos ? m.videos.map((video, i) => ({ name: `Video ${i + 1}`, url: getMediaUrl(video), type: 'video/mp4' })) : []),
+                            ...(m.voiceNotes ? m.voiceNotes.map((audio, i) => ({ name: `Audio ${i + 1}`, url: getMediaUrl(audio), type: 'audio/mpeg' })) : [])
                         ],
                         milestone: m.milestone || false,
                         visibility: m.visibility || (m.is_public ? 'public' : 'private')
@@ -164,9 +165,9 @@ const Timeline = () => {
                     milestone: m.milestone || m.is_milestone || false,
                     visibility: m.visibility || (m.isPublic !== undefined ? (m.isPublic ? 'public' : 'private') : (m.is_public ? 'public' : 'private')),
                     attachedFiles: [
-                        ...(m.photos ? m.photos.map((photo, i) => ({ name: `Image ${i + 1}`, url: photo, type: 'image/jpeg' })) : []),
-                        ...(m.videos ? m.videos.map((video, i) => ({ name: `Video ${i + 1}`, url: video, type: 'video/mp4' })) : []),
-                        ...(m.voiceNotes ? m.voiceNotes.map((audio, i) => ({ name: `Audio ${i + 1}`, url: audio, type: 'audio/mpeg' })) : [])
+                        ...(m.photos ? m.photos.map((photo, i) => ({ name: `Image ${i + 1}`, url: getMediaUrl(photo), type: 'image/jpeg' })) : []),
+                        ...(m.videos ? m.videos.map((video, i) => ({ name: `Video ${i + 1}`, url: getMediaUrl(video), type: 'video/mp4' })) : []),
+                        ...(m.voiceNotes ? m.voiceNotes.map((audio, i) => ({ name: `Audio ${i + 1}`, url: getMediaUrl(audio), type: 'audio/mpeg' })) : [])
                     ]
                 };
 
@@ -187,9 +188,9 @@ const Timeline = () => {
                     milestone: m.milestone || m.is_milestone || false,
                     visibility: m.visibility || (m.isPublic !== undefined ? (m.isPublic ? 'public' : 'private') : (m.is_public ? 'public' : 'private')),
                     attachedFiles: [
-                        ...(m.photos ? m.photos.map((photo, _) => ({ name: `Attachment`, url: photo, type: 'image/jpeg' })) : []),
-                        ...(m.videos ? m.videos.map((video, _) => ({ name: `Video`, url: video, type: 'video/mp4' })) : []),
-                        ...(m.voiceNotes ? m.voiceNotes.map((audio, _) => ({ name: `Audio`, url: audio, type: 'audio/mpeg' })) : [])
+                        ...(m.photos ? m.photos.map((photo, _) => ({ name: `Attachment`, url: getMediaUrl(photo), type: 'image/jpeg' })) : []),
+                        ...(m.videos ? m.videos.map((video, _) => ({ name: `Video`, url: getMediaUrl(video), type: 'video/mp4' })) : []),
+                        ...(m.voiceNotes ? m.voiceNotes.map((audio, _) => ({ name: `Audio`, url: getMediaUrl(audio), type: 'audio/mpeg' })) : [])
                     ]
                 };
                 setMemories([newFormattedMemory, ...memories]);
