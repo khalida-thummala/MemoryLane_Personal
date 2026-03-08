@@ -4,6 +4,7 @@ import axios from 'axios';
 import { ArrowLeft, Plus, Image as ImageIcon, Trash2, Calendar, MapPin, Tag, Users, Search, UserPlus, CheckCircle, Clock, X, ChevronLeft, Settings2, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 const AlbumDetail = () => {
     const { id } = useParams();
@@ -261,13 +262,13 @@ const AlbumDetail = () => {
                                     {memory.photos && memory.photos.length > 0 ? (
                                         <div className={`grid gap-1 ${memory.photos.length === 1 ? 'grid-cols-1' : memory.photos.length === 2 ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}>
                                             {memory.photos.map((photoUrl, idx) => {
-                                                const formattedUrl = photoUrl.startsWith('http') ? photoUrl : `http://localhost:5000/${photoUrl.replace(/\\/g, '/').replace(/^\//, '')}`;
+                                                const formattedUrl = getMediaUrl(photoUrl);
                                                 return (
                                                     <img
                                                         key={idx}
                                                         src={formattedUrl}
                                                         alt={`${memory.title} img ${idx}`}
-                                                        onClick={() => setSelectedImage({ url: formattedUrl, index: idx, allFiles: memory.photos.map(p => ({ url: p.startsWith('http') ? p : `http://localhost:5000/${p.replace(/\\/g, '/').replace(/^\//, '')}` })) })}
+                                                        onClick={() => setSelectedImage({ url: formattedUrl, index: idx, allFiles: memory.photos.map(p => ({ url: getMediaUrl(p) })) })}
                                                         className={`w-full object-cover cursor-pointer hover:opacity-80 transition-opacity ${memory.photos.length === 1 ? 'h-64' : 'h-32'}`}
                                                     />
                                                 );
@@ -421,7 +422,7 @@ const AlbumDetail = () => {
                                             return (
                                                 <div key={memory.id} className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-200 dark:border-slate-700 flex items-center gap-3">
                                                     {displayImg ? (
-                                                        <img src={displayImg.startsWith('http') ? displayImg : `http://localhost:5000/${displayImg.replace(/\\/g, '/').replace(/^\//, '')}`} alt="thumb" className="w-16 h-16 object-cover rounded-lg" />
+                                                        <img src={getMediaUrl(displayImg)} alt="thumb" className="w-16 h-16 object-cover rounded-lg" />
                                                     ) : (
                                                         <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
                                                             <ImageIcon size={20} className="text-gray-400" />

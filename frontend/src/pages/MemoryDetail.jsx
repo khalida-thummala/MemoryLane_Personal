@@ -4,6 +4,7 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Calendar, MapPin, Tag, Heart, MessageSquare, Send, Trash2, Edit3, X, Image as ImageIcon } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 const MemoryDetail = () => {
     const { id } = useParams();
@@ -87,7 +88,7 @@ const MemoryDetail = () => {
                         {memory.photos.map((photo, idx) => (
                             <img
                                 key={idx}
-                                src={photo.startsWith('http') ? photo : `http://localhost:5000/${photo.replace(/\\/g, '/').replace(/^\//, '')}`}
+                                src={getMediaUrl(photo)}
                                 className="w-full h-auto max-h-[700px] object-contain bg-slate-50 dark:bg-slate-800/50 hover:scale-[1.02] transition-transform duration-700"
                                 alt="memory"
                             />

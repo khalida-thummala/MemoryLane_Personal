@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import ShareOptions from '../components/ShareOptions';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 // ─────────────────────────────────────────────────────────
 // Avatar helper
@@ -394,7 +395,7 @@ const CommunityTimeline = () => {
                                 <div className="relative aspect-[4/5] overflow-hidden bg-slate-100 dark:bg-slate-800">
                                     {memory.photos?.length > 0 ? (
                                         <img
-                                            src={memory.photos[0].startsWith('http') ? memory.photos[0] : `http://localhost:5000/${memory.photos[0].replace(/\\/g, '/').replace(/^\//, '')}`}
+                                            src={getMediaUrl(memory.photos[0])}
                                             alt={memory.title}
                                             onClick={() => setSelectedImage({ url: memory.photos[0], index: 0, all: memory.photos })}
                                             className="w-full h-full object-cover cursor-zoom-in group-hover/card:scale-110 transition-transform duration-700"
@@ -565,7 +566,7 @@ const CommunityTimeline = () => {
                         <motion.img
                             initial={{ scale: 0.9 }}
                             animate={{ scale: 1 }}
-                            src={selectedImage.url?.startsWith('http') ? selectedImage.url : `http://localhost:5000/${selectedImage.url?.replace(/\\/g, '/').replace(/^\//, '')}`}
+                            src={getMediaUrl(selectedImage.url)}
                             className="max-w-[90vw] max-h-[80vh] object-contain rounded-3xl shadow-2xl"
                             onClick={e => e.stopPropagation()}
                         />

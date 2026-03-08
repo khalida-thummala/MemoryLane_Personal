@@ -4,6 +4,7 @@ import axios from 'axios';
 import { BookOpen, FolderPlus, Compass, Settings2, X, Plus, Image, Loader, Globe, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 const Albums = () => {
     const { user } = useContext(AuthContext);
@@ -161,7 +162,7 @@ const Albums = () => {
                         >
                             <div className="h-48 bg-gray-200 dark:bg-slate-800 relative overflow-hidden flex items-center justify-center">
                                 {displayCover ? (
-                                    <img src={displayCover.startsWith('http') ? displayCover : `http://localhost:5000/${displayCover.replace(/\\/g, '/').replace(/^\//, '')}`} alt={album.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                    <img src={getMediaUrl(displayCover)} alt={album.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                 ) : (
                                     <div className="text-slate-400 opacity-50 flex flex-col items-center group-hover:scale-110 transition-transform duration-700">
                                         <Image size={48} />
