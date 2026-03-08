@@ -20,44 +20,71 @@ export const AuthProvider = ({ children }) => {
         if (checkAttempted.current) return;
         checkAttempted.current = true;
 
+        // Safety timeout to ensure loading doesn't stay true forever (e.g., if Supabase hangs)
+        const safetyTimeout = setTimeout(() => {
+            setLoading(false);
+        }, 5000);
+
         const checkSession = async () => {
             try {
+                if (!supabase) {
+                    setLoading(false);
+                    return;
+                }
+
                 // Get the current session status from Supabase
                 const { data: { session }, error } = await supabase.auth.getSession();
 
                 if (session && !error) {
                     // Also fetch the profile row to get username / full_name
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('username, full_name, avatar_url')
-                        .eq('id', session.user.id)
-                        .single();
+                    try {
+                        const { data: profile } = await supabase
+                            .from('profiles')
+                            .select('username, full_name, avatar_url')
+                            .eq('id', session.user.id)
+                            .single();
 
-                    const userData = {
-                        id: session.user.id,
-                        email: session.user.email,
-                        token: session.access_token,
-                        name: profile?.full_name || profile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
-                        username: profile?.username || '',
-                        avatar: profile?.avatar_url || session.user.user_metadata?.avatar_url || ''
-                    };
-                    setUser(userData);
-                    localStorage.setItem('userInfo', JSON.stringify(userData));
+                        const userData = {
+                            id: session.user.id,
+                            email: session.user.email,
+                            token: session.access_token,
+                            name: profile?.full_name || profile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
+                            username: profile?.username || '',
+                            avatar: profile?.avatar_url || session.user.user_metadata?.avatar_url || ''
+                        };
+                        setUser(userData);
+                        localStorage.setItem('userInfo', JSON.stringify(userData));
+                    } catch (profileError) {
+                        console.error("Profile fetch error:", profileError);
+                        // Still set basic user data even if profile fetch fails
+                        const userData = {
+                            id: session.user.id,
+                            email: session.user.email,
+                            token: session.access_token,
+                            name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
+                            username: '',
+                            avatar: session.user.user_metadata?.avatar_url || ''
+                        };
+                        setUser(userData);
+                    }
                 } else {
                     const saved = localStorage.getItem('userInfo');
                     if (!saved) setUser(null);
+                    // If we have a saved user but no active Supabase session, 
+                    // we might want to clear it, but let's keep it for now
                 }
             } catch (err) {
                 console.error("Session check error:", err);
             } finally {
                 setLoading(false);
+                clearTimeout(safetyTimeout);
             }
         };
 
         checkSession();
 
         // Listen for auth state changes globally
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: authListener } = supabase?.auth?.onAuthStateChange(async (event, session) => {
             if (session) {
                 // Fetch profile on every auth state change too
                 const { data: profile } = await supabase
@@ -82,7 +109,10 @@ export const AuthProvider = ({ children }) => {
             }
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            authListener?.subscription?.unsubscribe();
+            clearTimeout(safetyTimeout);
+        };
     }, []);
 
     useEffect(() => {
