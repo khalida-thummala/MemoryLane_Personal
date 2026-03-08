@@ -32,12 +32,6 @@ const Home = () => {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        if (user) {
-            navigate('/timeline');
-        }
-    }, [user, navigate]);
-
     return (
         <div className="flex flex-col gap-24 overflow-hidden">
             {/* Hero Section */}
@@ -78,9 +72,9 @@ const Home = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.7, delay: 0.6 }}
                 >
-                    <Link to="/register">
+                    <Link to={user ? "/timeline" : "/register"}>
                         <Button size="lg" className="gap-2 px-10 font-bold">
-                            Start Your Journey <ChevronRight size={20} />
+                            {user ? "Go to My Dashboard" : "Start Your Journey"} <ChevronRight size={20} />
                         </Button>
                     </Link>
                 </motion.div>

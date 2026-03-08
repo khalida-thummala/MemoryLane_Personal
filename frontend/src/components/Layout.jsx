@@ -66,7 +66,7 @@ const Layout = ({ children }) => {
                         <div className="flex items-center justify-center py-10 opacity-50">
                             <Clock className="animate-spin" />
                         </div>
-                    ) : (user && !isHomePage) ? (
+                    ) : (user) ? (
                         <>
                             <div className="mb-6 px-4 py-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
@@ -79,10 +79,9 @@ const Layout = ({ children }) => {
                                     <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[150px]">{user.email}</span>
                                 </div>
                             </div>
-
                             <Link to="/timeline" onClick={handleLinkClick} className={navLinkClass('/timeline')}>
                                 {activeIndicator('/timeline')}
-                                <Clock size={20} /> Timeline
+                                <Clock size={20} /> My Timeline
                             </Link>
                             <Link to="/albums" onClick={handleLinkClick} className={navLinkClass('/albums')}>
                                 {activeIndicator('/albums')}
@@ -108,17 +107,12 @@ const Layout = ({ children }) => {
                     ) : (
                         <div className="text-center opacity-60 text-sm py-4 space-y-4">
                             <p>Capture the sights, sounds, and feelings of right now—forever.</p>
-                            {user && isHomePage && (
-                                <Link to="/timeline" className="block p-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-bold">
-                                    Go to My Dashboard
-                                </Link>
-                            )}
                         </div>
                     )}
                 </div>
 
                 <div className="p-6 border-t border-gray-100 dark:border-slate-800 flex flex-col gap-3">
-                    {user && !isHomePage ? (
+                    {user ? (
                         <>
                             <Link to="/profile" onClick={handleLinkClick} className={navLinkClass('/profile')}>
                                 {activeIndicator('/profile')}
