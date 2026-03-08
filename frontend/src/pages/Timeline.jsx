@@ -273,7 +273,7 @@ const Timeline = () => {
 
     const toggleAudioRecording = async () => {
         if (isRecording) {
-            if (mediaRecorderRef.current) {
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
                 mediaRecorderRef.current.stop();
                 mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
             }
@@ -281,31 +281,51 @@ const Timeline = () => {
         } else {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorderRef.current = new MediaRecorder(stream);
+
+                // Determine supported MIME type
+                const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+                    ? 'audio/webm'
+                    : (MediaRecorder.isTypeSupported('audio/ogg') ? 'audio/ogg' : 'audio/mp4');
+
+                const extension = mimeType.split('/')[1].split(';')[0];
+
+                mediaRecorderRef.current = new MediaRecorder(stream, { mimeType });
                 audioChunksRef.current = [];
+
                 mediaRecorderRef.current.ondataavailable = (event) => {
-                    if (event.data.size > 0) audioChunksRef.current.push(event.data);
+                    if (event.data && event.data.size > 0) {
+                        audioChunksRef.current.push(event.data);
+                    }
                 };
+
                 mediaRecorderRef.current.onstop = () => {
-                    // Browsers record in webm or ogg, setting extension to .webm for better compatibility
-                    const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-                    const audioFile = new File([audioBlob], `voicenote_${Date.now()}.webm`, { type: 'audio/webm' });
+                    if (audioChunksRef.current.length === 0) {
+                        console.warn("No audio data captured.");
+                        return;
+                    }
+
+                    const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+                    const audioFile = new File([audioBlob], `voicenote_${Date.now()}.${extension}`, { type: mimeType });
+
                     const newAudioData = {
                         name: audioFile.name,
                         url: URL.createObjectURL(audioFile),
                         fileObj: audioFile,
-                        type: 'audio/webm'
+                        type: mimeType
                     };
+
                     setNewMemory(prev => ({
                         ...prev,
                         attachedFiles: [...prev.attachedFiles, newAudioData]
                     }));
                 };
-                mediaRecorderRef.current.start();
+
+                // Start recording and request data every 1 second to ensure chunks are populated
+                mediaRecorderRef.current.start(1000);
                 setIsRecording(true);
             } catch (err) {
                 console.error("Error accessing microphone:", err);
-                alert("Could not access microphone. Please check permissions.");
+                alert("Could not access microphone. Please check permissions and ensure you are using HTTPS.");
             }
         }
     };
