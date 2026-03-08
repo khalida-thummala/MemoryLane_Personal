@@ -12,31 +12,32 @@ This directory contains the premium React-based frontend for **MemoryLane**. It 
 ---
 
 ## 🌟 Premium Features
-- **Glassmorphism UI:** A sleek, modern design system using Tailwind CSS and custom glass-blur effects.
-- **Fluid Animations:** Powered by **Framer Motion**, featuring layout transitions, hover states, and staggered entry animations.
-- **Multimedia Experiences:** Integrated support for high-resolution photo galleries, video playback, and audio voice notes.
-- **Smart Dashboard:** A personalized hub for tracking your memories, milestones, and social invitations.
-- **Interactive Albums:** Group-shared or private digital scrapbooks with collaborative features.
-- **Security-First Auth:** Fully integrated with Supabase Auth and protected routes.
+- **Glassmorphism UI:** A sleek, modern design system using Tailwind CSS and custom glass-blur effects for a futuristic feel.
+- **Fluid Animations:** Powered by **Framer Motion**, featuring layout transitions, hover states, and staggered entry animations that make the app feel alive.
+- **Stories & Dynamic Highlights:** Relive your past through automatically generated stories and cinematic highlight reels.
+- **Collage Master:** An interactive tool to create and download high-resolution JPEG collages of your cherished moments.
+- **Reminisce Search & Filter:** A sophisticated interface to find memories by date range, milsetones, or media type.
+- **Visual Grid Community Feed:** A responsive, masonry-style layout for discovering public memories from the community.
+- **Collaborative Albums:** Real-time collaboration on shared digital scrapbooks with invitation tracking.
 
 ---
 
 ## 🛠️ Frontend Tech Stack
-- **React 18 & Vite:** Modern architecture with ultra-fast development and build cycles.
-- **Tailwind CSS:** Utility-first styling with a bespoke professional theme.
-- **Framer Motion:** High-end micro-animations and smooth page transitions.
+- **React 18 & Vite:** Modern architecture with ultra-fast development and optimized production builds.
+- **Tailwind CSS:** Utility-first styling with a bespoke professional theme and glassmorphism utilities.
+- **Framer Motion:** High-end micro-animations and smooth page transitions for a premium UX.
 - **Lucide React:** Premium, consistent iconography.
-- **Axios:** Managed API communication with centralized interceptors.
-- **React Router Dom:** Sophisticated client-side navigation and protected routing.
+- **Axios:** Managed API communication with centralized interceptors and error handling.
+- **React Router Dom:** Sophisticated client-side navigation with protected and role-based routing.
 
 ---
 
 ## 📂 Folder Structure
-- `/src/components`: Reusable UI components (Buttons, Glass Cards, Modals).
-- `/src/context`: Auth and Global State management.
-- `/src/pages`: Feature-rich views (Dashboard, Memories, Albums, Social).
-- `/src/services`: Centralized API service layer.
-- `/src/hooks`: Custom React hooks for business logic.
+- `/src/components`: Reusable UI components (Glass Cards, Modals, Animated Buttons).
+- `/src/context`: Auth, Global State, and Notification management.
+- `/src/pages`: Feature-rich views (Dashboard, Reminisce, Albums, Social, Stories).
+- `/src/services`: Centralized API service layer with Axios instances.
+- `/src/hooks`: Custom React hooks for business logic and data fetching.
 
 ---
 

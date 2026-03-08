@@ -17,20 +17,22 @@ MemoryLane is a sophisticated, full-stack application designed to preserve, orga
 
 ## 🌟 Core Highlights
 
-### 🎞️ Multimedia Storytelling
+### 🎞️ The Storytelling Engine
 - **High-Fidelity Capture:** Support for 4K Photos, HD Videos, and High-Fidelity Voice Notes.
-- **AI Video Generation:** Automatically compile your memories into nostalgic highlight reels (powered by FFmpeg/Simulated AI).
+- **Stories & Highlights:** Automatically compile your memories into nostalgic highlight reels and interactive digital stories.
+- **Reminisce Search:** Powerful filtering to relive memories from specific dates, milestones, or mood-based tags.
 - **Interactive Timeline:** A fluidly animated, chronological feed of your life journey powered by Framer Motion.
 
 ### 🔒 Privacy & Sovereignty
 - **Granular Controls:** Choose between *Private*, *Friends Only*, or *Public* visibility for every memory.
+- **Collage Master:** Generate and download high-resolution JPEG collages of your favorite memories instantly.
 - **Data Export:** Instantly package your entire history—including all high-res media—into a secure ZIP archive.
-- **Security-First Architecture:** Protected by Supabase Auth, JWT middleware, and security headers (Helmet, Rate-limiting).
+- **Security-First Architecture:** Protected by Supabase Auth, JWT middleware, and account-level privacy controls.
 
-### 👥 Social Circle
-- **Validated Connections:** Manage friend requests and build a trusted social circle.
-- **Collaborative Albums:** Create shared spaces where groups can contribute to a single themed collection.
-- **Community Stream:** Discover public milestones from the global MemoryLane community.
+### 👥 Social & Collaboration
+- **Collaborative Albums:** Create shared spaces where friends can contribute to a single themed collection with advanced invitation management.
+- **Validated Connections:** Build a trusted social circle through a secure follower/friend system.
+- **Community Stream:** Discover and interact with public milestones through a responsive, visual grid layout.
 
 ---
 
@@ -47,7 +49,7 @@ MemoryLane is a sophisticated, full-stack application designed to preserve, orga
 - **Runtime:** Node.js & Express.js (ES Modules).
 - **Security:** JWT Auth, Helmet.js, Express Rate Limit, and Joi Validation.
 - **Media Engine:** Cloudinary API for optimized image/video transformation and delivery.
-- **Processing:** Fluent-FFmpeg for automated video synthesis.
+- **Collage Engine:** Canvas-based dynamic image generation for premium downloads.
 - **Architecture:** Controller-Service-Route pattern with robust error handling.
 
 ### Infrastructure & Database
@@ -65,7 +67,7 @@ graph TD
     B -->|Axios + JWT| C[Node.js API Server]
     C -->|Auth / SQL| D[Supabase PostgreSQL]
     C -->|Media Uploads| E[Cloudinary CDN]
-    C -->|AI Video Synthesis| F[FFmpeg Engine]
+    C -->|Stories & Collages| F[Processing Engine]
     C -->|Exports| G[ZIP Archive Generator]
     
     subgraph "Storage & Cloud"

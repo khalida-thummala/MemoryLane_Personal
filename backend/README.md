@@ -8,10 +8,10 @@ This service acts as the central intelligence for the MemoryLane ecosystem. It m
 ## 🛠️ Tech Stack
 - **Runtime:** Node.js (ES Modules)
 - **Framework:** Express.js
-- **Database:** Supabase (PostgreSQL)
-- **Media Hosting:** Cloudinary (via Multer-Storage-Cloudinary)
-- **Security:** Helmet, CORS, Express-Rate-Limit, JWT
-- **Utilities:** Archiver (for data export), Node-Cron (scheduled tasks), Nodemailer
+- **Database:** Supabase (PostgreSQL) with Row-Level Security (RLS)
+- **Media Hosting:** Cloudinary (Multimedia Optimization & Delivery)
+- **Security:** Helmet, CORS, Express-Rate-Limit, JWT-based Auth
+- **Utilities:** Archiver (ZIP Exports), Canvas (Collage Generation), Node-Cron, Nodemailer
 
 ---
 
@@ -22,49 +22,44 @@ This service acts as the central intelligence for the MemoryLane ecosystem. It m
 | :--- | :--- | :--- |
 | POST | `/register` | Register a new user |
 | POST | `/login` | Authenticate and get JWT |
-| POST | `/logout` | Invalidate current session |
 | GET | `/profile` | Get current user's profile |
 | PUT | `/profile` | Update profile metadata |
-| PUT | `/password` | Securely change password |
+| DELETE | `/account` | Permanently delete user account |
 
 ### 🎞️ Memories (`/api/memories`)
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | GET | `/` | Fetch user's memories (search/filter support) |
-| POST | `/` | Cloudinary-backed multimedia upload |
+| POST | `/` | Multimedia upload (Photos/Video/Audio) |
 | GET | `/community` | Fetch the global Community Stream |
-| GET | `/:id` | Get details of a single memory |
-| PUT | `/:id` | Update memory or edit visibility |
-| DELETE | `/:id` | Permanently remove a memory |
+| GET | `/reminisce` | Flashback engine for specific date ranges |
+| POST | `/reminisce/save-search` | Save search parameters for quick recall |
 | POST | `/:id/like` | Like/Unlike a memory |
+| POST | `/:id/comment` | Add community feedback |
 
-### 👥 Social Circle (`/api/friends`)
+### 👥 Social & Collaboration (`/api/albums`)
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| GET | `/` | List established connections |
-| GET | `/pending` | List incoming friend invitations |
-| GET | `/sent` | Track outgoing friend requests |
-| POST | `/request/:id` | Send a new invitation |
-| POST | `/accept/:id` | Establish a bidirectional connection |
-| POST | `/cancel/:id` | Revoke a sent invitation |
+| GET | `/` | List all user albums |
+| POST | `/` | Create a new themed scrapbook |
+| GET | `/requests/pending` | View incoming collaboration invites |
+| POST | `/:id/request` | Invite a collaborator by ID |
+| POST | `/:id/accept` | Join a collaborative album |
 
-### 📦 Data & Exports (`/api/export`)
+### 📦 Exports & AI (`/api/export` / `/api/ai`)
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| GET | `/zip` | Generate and download a ZIP of all user media |
+| GET | `/export/zip` | Generate and download media ZIP |
+| POST | `/ai/reminisce/generate` | Generate interactive stories/slideshows |
 
 ---
 
 ## 🏗️ Database Schema
 MemoryLane uses a normalized relational schema in Supabase.
-- **Profiles:** User identity and metadata.
-- **Memories:** Core entity with `visibility` states (`private`, `friends`, `public`).
-- **Media:** 1:N relationship with memories for multi-file support.
-- **Friend Requests:** Tracks the social graph state.
-- **Albums/Collaboration:** Many-to-many relationships for shared collections.
-
-> [!NOTE]  
-> For the full ER diagram and column definitions, refer to [DATABASE_SCHEMA.md](../DATABASE_SCHEMA.md) in the root directory.
+- **Profiles:** User identity, following stats, and preferences.
+- **Memories:** Core entity with multi-media support and visibility states.
+- **Collaborators:** Join table managing album access and roles.
+- **Activity Logs:** Tracks milestone changes and critical actions.
 
 ---
 
@@ -92,12 +87,12 @@ MemoryLane uses a normalized relational schema in Supabase.
    ```
 
 ### Deployment
-- **Platform:** Optimized for Heroku, Railway, or Render.
+- **Platform:** Optimized for Render (Backend) and Supabase (Infrastructure).
 - **Link:** `https://memorylane-personal.onrender.com`
 
 ---
 
 ## 🧪 Testing Utilities
 Automated diagnostic scripts are available in `backend/tests/`:
-- `debug_community.js`: Verifies Supabase visibility rules for public/friends content.
+- `debug_community.js`: Verifies visibility rules for public/friends content.
 - `auth.test.js`: Validates sign-up/sign-in flows.
