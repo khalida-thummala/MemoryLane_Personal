@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Plus, Image as ImageIcon, Video, Mic, MapPin, Tag, Calendar, X, Heart, Edit3, Trash2, Search, File, Star, Share2, Globe, Lock, ChevronLeft, Users } from 'lucide-react';
+import { Clock, Plus, Image as ImageIcon, Video, Mic, MapPin, Tag, Calendar, X, Heart, Edit3, Trash2, Search, File, Star, Share2, Globe, Lock, ChevronLeft, Users, Music } from 'lucide-react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { getMediaUrl } from '../utils/mediaUtils';
@@ -510,7 +510,14 @@ const Timeline = () => {
                                                     <div className={`p-4 rounded-2xl shadow-sm group-hover:scale-110 transition-transform ${isRecording ? 'bg-rose-100 animate-pulse' : 'bg-white dark:bg-slate-800'}`}>
                                                         <Mic size={24} />
                                                     </div>
-                                                    <span className="text-[10px] font-black uppercase">{isRecording ? "Stop" : "Voice"}</span>
+                                                    <span className="text-[10px] font-black uppercase">{isRecording ? "Stop" : "Record"}</span>
+                                                </button>
+
+                                                <button type="button" onClick={() => audioRef.current.click()} className="flex flex-col items-center gap-1 group text-slate-600 dark:text-slate-400 hover:text-indigo-600 transition-colors">
+                                                    <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 shadow-sm group-hover:scale-110 transition-transform">
+                                                        <Music size={24} />
+                                                    </div>
+                                                    <span className="text-[10px] font-black uppercase">File</span>
                                                 </button>
                                             </div>
 
@@ -640,16 +647,30 @@ const Timeline = () => {
                                                 {memory.attachedFiles && memory.attachedFiles.length > 0 ? (
                                                     <div className="w-full h-full">
                                                         {memory.attachedFiles[0].type?.startsWith('video') ? (
-                                                            <video src={memory.attachedFiles[0].url} className="w-full h-full object-cover" />
+                                                            <div className="relative w-full h-full">
+                                                                <video
+                                                                    src={memory.attachedFiles[0].url}
+                                                                    controls
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                                <div
+                                                                    onClick={() => setSelectedImage({ url: memory.attachedFiles[0].url, index: 0, type: 'video', allFiles: memory.attachedFiles })}
+                                                                    className="absolute inset-0 cursor-zoom-in z-10 bg-transparent"
+                                                                    title="Expand Video"
+                                                                />
+                                                            </div>
                                                         ) : memory.attachedFiles[0].type?.startsWith('audio') ? (
-                                                            <div className="w-full h-full flex items-center justify-center bg-rose-50 dark:bg-rose-900/10 text-rose-500">
+                                                            <div
+                                                                onClick={() => setSelectedImage({ url: memory.attachedFiles[0].url, index: 0, type: 'audio', allFiles: memory.attachedFiles })}
+                                                                className="w-full h-full flex items-center justify-center bg-rose-50 dark:bg-rose-900/10 text-rose-500 cursor-zoom-in"
+                                                            >
                                                                 <Mic size={40} />
                                                             </div>
                                                         ) : (
                                                             <img
                                                                 src={memory.attachedFiles[0].url}
                                                                 alt="thumbnail"
-                                                                onClick={() => setSelectedImage({ url: memory.attachedFiles[0].url, index: 0, allFiles: memory.attachedFiles.filter(f => !f.type?.startsWith('video') && !f.type?.startsWith('audio')) })}
+                                                                onClick={() => setSelectedImage({ url: memory.attachedFiles[0].url, index: 0, type: 'image', allFiles: memory.attachedFiles })}
                                                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 cursor-zoom-in"
                                                             />
                                                         )}
@@ -766,15 +787,32 @@ const Timeline = () => {
                             <ChevronLeft size={20} strokeWidth={3} /> Return
                         </button>
 
-                        <motion.img
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            src={selectedImage.url}
-                            alt="Fullscreen"
-                            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking the image
-                            className="max-w-[90vw] max-h-[80vh] object-contain rounded-3xl shadow-[0_0_100px_rgba(0,0,0,0.5)] ring-1 ring-white/20 cursor-default"
-                        />
+                        {selectedImage.type === 'video' || selectedImage.url.match(/\.(mp4|webm|ogg)$/i) || (selectedImage.allFiles?.[selectedImage.index]?.type?.startsWith('video')) ? (
+                            <video
+                                controls
+                                autoPlay
+                                src={selectedImage.url}
+                                className="max-w-[90vw] max-h-[80vh] rounded-3xl shadow-2xl"
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        ) : (selectedImage.type === 'audio' || selectedImage.url.match(/\.(mp3|wav|ogg|webm)$/i) || (selectedImage.allFiles?.[selectedImage.index]?.type?.startsWith('audio'))) ? (
+                            <div className="bg-white/10 p-10 rounded-[3rem] backdrop-blur-md flex flex-col items-center gap-6" onClick={(e) => e.stopPropagation()}>
+                                <div className="w-24 h-24 rounded-full bg-rose-500 flex items-center justify-center text-white shadow-xl">
+                                    <Mic size={40} />
+                                </div>
+                                <audio controls src={selectedImage.url} autoPlay className="w-80 h-14" />
+                            </div>
+                        ) : (
+                            <motion.img
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                                src={selectedImage.url}
+                                alt="Fullscreen"
+                                onClick={(e) => e.stopPropagation()}
+                                className="max-w-[90vw] max-h-[80vh] object-contain rounded-3xl shadow-[0_0_100px_rgba(0,0,0,0.5)] ring-1 ring-white/20 cursor-default"
+                            />
+                        )}
 
                         {selectedImage.allFiles && selectedImage.allFiles.length > 1 && (
                             <div
@@ -782,12 +820,19 @@ const Timeline = () => {
                                 className="absolute bottom-10 flex gap-4 overflow-x-auto max-w-[90vw] px-8 py-5 bg-white/5 rounded-[2rem] backdrop-blur-2xl border border-white/10 shadow-2xl no-scrollbar"
                             >
                                 {selectedImage.allFiles.map((f, idx) => (
-                                    <img
+                                    <div
                                         key={idx}
-                                        src={f.url}
                                         onClick={() => setSelectedImage({ ...selectedImage, url: f.url, index: idx })}
-                                        className={`w-24 h-24 object-cover rounded-2xl cursor-pointer border-4 transition-all hover:scale-110 flex-shrink-0 ${idx === selectedImage.index ? 'border-indigo-500 opacity-100 scale-110' : 'border-transparent opacity-30 hover:opacity-60'}`}
-                                    />
+                                        className={`w-24 h-24 rounded-2xl cursor-pointer border-4 transition-all hover:scale-110 flex-shrink-0 relative overflow-hidden flex items-center justify-center ${idx === selectedImage.index ? 'border-indigo-500 opacity-100 scale-110' : 'border-transparent opacity-30 hover:opacity-60'}`}
+                                    >
+                                        {f.type?.startsWith('video') ? (
+                                            <div className="w-full h-full bg-slate-800 flex items-center justify-center text-white"><Video size={20} /></div>
+                                        ) : f.type?.startsWith('audio') ? (
+                                            <div className="w-full h-full bg-rose-600 flex items-center justify-center text-white"><Mic size={20} /></div>
+                                        ) : (
+                                            <img src={f.url} className="w-full h-full object-cover" />
+                                        )}
+                                    </div>
                                 ))}
                             </div>
                         )}
