@@ -1,13 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import { useState } from 'react';
 
 import { authService } from '../services/api';
 import { Button } from '../components/ui/Button';
-import axios from 'axios';
+
 
 const Register = () => {
-    const { login } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const [name, setName] = useState('');

@@ -1,303 +1,140 @@
-import { supabase, adminSupabase } from '../config/supabase.js';
+import { supabase } from '../config/supabase.js';
 
-// @desc    Register a new user
-// @route   POST /api/auth/register
-// @access  Public
-export const registerUser = async (req, res) => {
-    try {
-        const { name, email, password } = req.body;
-
-        if (!name || !email || !password) {
-            return res.status(400).json({ message: 'Please provide name, email and password' });
-        }
-
-        console.log('Registering user:', email);
-
-        // Sign up user via standard Auth (anon key friendly)
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    full_name: name,
-                    username: name.toLowerCase().replace(/\s+/g, '_')
-                }
-            }
-        });
-
-        if (authError) {
-            console.error('Registration error:', authError);
-            return res.status(400).json({ message: authError.message });
-        }
-
-        if (!authData.user) {
-            return res.status(500).json({ message: 'Registration failed: User not created' });
-        }
-
-        // Note: The public.profiles table is updated automatically via the handle_new_user() trigger in DB
-
-        return res.status(201).json({
-            id: authData.user.id,
-            name: name,
-            email: authData.user.email,
-            token: authData.session?.access_token || null,
-            refreshToken: authData.session?.refresh_token || null,
-            message: authData.session ? 'Registration successful' : 'Check your email for confirmation link'
-        });
-
-    } catch (error) {
-        console.error('Registration catch error:', error);
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// @desc    Auth user & get token
-// @route   POST /api/auth/login
-// @access  Public
-export const loginUser = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-        if (error) {
-            return res.status(401).json({ message: 'Invalid email or password' });
-        }
-
-        // Fetch profile
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('username, avatar_url, full_name')
-            .eq('id', data.user.id)
-            .single();
-
-        res.cookie('jwt', data.session.refresh_token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
-
-        return res.json({
-            id: data.user.id,
-            email: data.user.email,
-            name: profile?.full_name || profile?.username || data.user.email,
-            avatar_url: profile?.avatar_url || '',
-            token: data.session.access_token,
-            refreshToken: data.session.refresh_token,
-        });
-
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// @desc    Refresh access token
-// @route   POST /api/auth/refresh
-// @access  Public
-export const refreshAccessToken = async (req, res) => {
-    try {
-        const refreshToken = req.cookies?.jwt || req.body.refreshToken;
-
-        if (!refreshToken) {
-            return res.status(401).json({ message: 'Not authorized, no refresh token' });
-        }
-
-        const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
-
-        if (error || !data.session) {
-            return res.status(403).json({ message: 'Refresh token expired or invalid' });
-        }
-
-        res.cookie('jwt', data.session.refresh_token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
-
-        return res.json({ token: data.session.access_token });
-
-    } catch (error) {
-        res.status(403).json({ message: 'Refresh token error', error: error.message });
-    }
-};
-
-// @desc    Logout user
-// @route   POST /api/auth/logout
-// @access  Private
-export const logoutUser = async (req, res) => {
-    try {
-        if (adminSupabase) {
-            await adminSupabase.auth.admin.signOut(req.user.id);
-        } else {
-            // Fallback for non-admin client (sign out current session)
-            await supabase.auth.signOut();
-        }
-        res.cookie('jwt', '', { httpOnly: true, expires: new Date(0) });
-        return res.status(200).json({ message: 'Logged out successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// @desc    Get user profile
-// @route   GET /api/auth/profile
-// @access  Private
+/**
+ * getUserProfile - Retrieves profile for the current authenticated user
+ */
 export const getUserProfile = async (req, res) => {
     try {
         const { data: profile, error } = await supabase
             .from('profiles')
-            .select('id, username, avatar_url, created_at')
+            .select('*')
             .eq('id', req.user.id)
             .single();
 
-        if (error || !profile) {
-            return res.status(404).json({ message: 'User not found' });
-        }
+        if (error) return res.status(404).json({ message: 'Profile not found' });
 
-        const { data: friendsData } = await supabase
-            .from('friends')
-            .select('friend_id')
-            .eq('user_id', req.user.id);
+        const { data: following } = await supabase
+            .from('follows')
+            .select('following_id')
+            .eq('follower_id', req.user.id);
 
-        const following = friendsData ? friendsData.map(f => f.friend_id) : [];
+        profile.following = following ? following.map(f => f.following_id) : [];
 
-        return res.json({
-            id: profile.id,
-            name: profile.username || 'User',
-            email: req.user.email,
-            avatar_url: profile.avatar_url,
-            username: profile.username,
-            created_at: profile.created_at,
-            following: following
-        });
+        res.json(profile);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// @desc    Update user profile
-// @route   PUT /api/auth/profile
-// @access  Private
+/**
+ * updateUserProfile - Updates profile info
+ */
 export const updateUserProfile = async (req, res) => {
     try {
-        const updates = {};
-        if (req.body.username) updates.username = req.body.username;
-        if (req.body.avatar_url) updates.avatar_url = req.body.avatar_url;
+        const { full_name, username, avatar_url } = req.body;
 
-        const { data, error } = await supabase
+        // Prepare update object with only defined fields
+        const updateData = {};
+        if (full_name !== undefined) updateData.full_name = full_name;
+        if (username !== undefined) updateData.username = username;
+        if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
+
+        const { data: updated, error } = await supabase
             .from('profiles')
-            .update(updates)
+            .update(updateData)
             .eq('id', req.user.id)
             .select()
             .single();
 
-        if (error) return res.status(400).json({ message: error.message });
-
-        // Update email in auth if provided
-        if (req.body.email && req.body.email !== req.user.email) {
-            const { error: emailError } = await supabase.auth.admin.updateUserById(req.user.id, {
-                email: req.body.email
-            });
-            if (emailError) return res.status(400).json({ message: emailError.message });
-        }
-
-        return res.json({
-            id: data.id,
-            name: data.full_name || data.username,
-            email: req.body.email || req.user.email,
-            avatar_url: data.avatar_url,
-            username: data.username,
-        });
+        if (error) return res.status(500).json({ message: error.message });
+        res.json(updated);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// @desc    Change Password
-// @route   PUT /api/auth/password
-// @access  Private
-export const changePassword = async (req, res) => {
-    try {
-        const { error } = await supabase.auth.admin.updateUserById(req.user.id, {
-            password: req.body.newPassword
-        });
-        if (error) return res.status(400).json({ message: error.message });
-        return res.json({ message: 'Password updated successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// @desc    Delete Account
-// @route   DELETE /api/auth/account
-// @access  Private
-export const deleteAccount = async (req, res) => {
-    try {
-        const { error } = await supabase.auth.admin.deleteUser(req.user.id);
-        if (error) return res.status(400).json({ message: error.message });
-        res.cookie('jwt', '', { httpOnly: true, expires: new Date(0) });
-        return res.json({ message: 'User account deleted' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-
-
-// @desc    Search for users
-// @route   GET /api/auth/users/search
-// @access  Private
+/**
+ * searchUsers - Searches for users to invite to albums
+ */
 export const searchUsers = async (req, res) => {
     try {
         const { search } = req.query;
-        if (!search) return res.json([]);
-
         const { data: users, error } = await supabase
             .from('profiles')
-            .select('id, username, avatar_url')
-            .ilike('username', `%${search}%`)
+            .select('id, username, full_name, avatar_url')
+            .or(`username.ilike.%${search}%,full_name.ilike.%${search}%`)
             .limit(10);
 
-        if (error) throw error;
-        res.json(users || []);
+        if (error) return res.status(500).json({ message: error.message });
+        res.json(users);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// @desc    Follow a user
-// @route   POST /api/auth/users/:id/follow
-// @access  Private
+// Placeholder for logic handled on frontend or needing more context
+export const registerUser = (req, res) => res.status(501).json({ message: 'Use Supabase Auth on Frontend' });
+export const loginUser = (req, res) => res.status(501).json({ message: 'Use Supabase Auth on Frontend' });
+export const logoutUser = (req, res) => res.json({ message: 'Handled via AuthContext' });
 export const followUser = async (req, res) => {
     try {
-        // Using friends table as a follow relationship
-        const { error } = await supabase.from('friends').upsert({
-            user_id: req.user.id,
-            friend_id: req.params.id
-        }, { onConflict: 'user_id,friend_id' });
+        const followerId = req.user.id;
+        const targetId = req.params.id;
 
-        if (error) return res.status(400).json({ message: error.message });
-        return res.json({ message: 'Successfully followed user' });
+        if (followerId === targetId) return res.status(400).json({ message: 'Cannot follow yourself' });
+
+        const { error } = await supabase
+            .from('follows')
+            .insert({ follower_id: followerId, following_id: targetId });
+
+        if (error) {
+            if (error.code === '23505') return res.status(400).json({ message: 'Already following' });
+            return res.status(500).json({ message: error.message });
+        }
+
+        res.json({ message: 'Followed user' });
     } catch (error) {
-        res.status(500).json({ message: 'Follow action failed' });
+        res.status(500).json({ message: error.message });
     }
 };
 
-// @desc    Unfollow a user
-// @route   POST /api/auth/users/:id/unfollow
-// @access  Private
 export const unfollowUser = async (req, res) => {
     try {
-        const { error } = await supabase.from('friends')
-            .delete()
-            .eq('user_id', req.user.id)
-            .eq('friend_id', req.params.id);
+        const followerId = req.user.id;
+        const targetId = req.params.id;
 
-        if (error) return res.status(400).json({ message: error.message });
-        return res.json({ message: 'Successfully unfollowed user' });
+        const { error } = await supabase
+            .from('follows')
+            .delete()
+            .eq('follower_id', followerId)
+            .eq('following_id', targetId);
+
+        if (error) return res.status(500).json({ message: error.message });
+
+        res.json({ message: 'Unfollowed user' });
     } catch (error) {
-        res.status(500).json({ message: 'Unfollow action failed' });
+        res.status(500).json({ message: error.message });
     }
 };
+export const changePassword = async (req, res) => {
+    try {
+        const { newPassword } = req.body;
+        const { adminSupabase } = await import('../config/supabase.js');
+
+        if (!adminSupabase) {
+            return res.status(500).json({ message: 'Admin features not configured' });
+        }
+
+        const { error } = await adminSupabase.auth.admin.updateUserById(
+            req.user.id,
+            { password: newPassword }
+        );
+
+        if (error) return res.status(500).json({ message: error.message });
+        res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+export const deleteAccount = (req, res) => res.status(501).json({ message: 'Not Implemented' });
+export const refreshAccessToken = (req, res) => res.status(501).json({ message: 'Handled by SDK' });

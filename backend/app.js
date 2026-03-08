@@ -13,6 +13,7 @@ import albumRoutes from './routes/albumRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
 import friendRoutes from './routes/friendRoutes.js';
+import communityRouter from './routes/communityRoutes.js';
 
 // Import Custom Middlewares
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
@@ -50,10 +51,17 @@ app.use(express.urlencoded({ limit: '100mb', extended: true }));
 app.use(cookieParser());
 app.use(morgan('dev'));
 
-// Static files (for uploaded media)
-app.use('/uploads', express.static('uploads'));
+// Static files (for uploaded media) with CORS enabled for canvas exports
+app.use('/uploads', express.static('uploads', {
+  setHeaders: (res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+  }
+}));
 
 // API Routes
+// Public community feed — separate router with no auth requirement
+app.use('/api/community', communityRouter);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/memories', memoryRoutes);
 app.use('/api/albums', albumRoutes);

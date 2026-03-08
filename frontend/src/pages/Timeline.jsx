@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useContext, useCallback } from 'react';
+import { useState, useRef, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Plus, Image as ImageIcon, Video, Mic, MapPin, Tag, Calendar, X, Heart, Edit3, Trash2, Search, File, Star, Share2, Globe, Lock, ChevronLeft, Users } from 'lucide-react';
 import axios from 'axios';
@@ -79,7 +79,7 @@ const Timeline = () => {
                     try {
                         const d = new Date(m.date);
                         dateStr = isNaN(d) ? 'Unknown Date' : d.toISOString().split('T')[0];
-                    } catch (e) {
+                    } catch (_) {
                         dateStr = 'Unknown Date';
                     }
 
@@ -90,14 +90,16 @@ const Timeline = () => {
                         date: dateStr,
                         location: m.locationName || (m.location && m.location.address) || '',
                         tags: m.tags || [],
-                        isFavorite: m.milestone || false, // Mapping milestone to favorite for now
+                        isFavorite: m.likes?.includes(user?.id) || false,
+                        likes: m.likes || [],
+                        commentCount: m.commentCount || 0,
                         attachedFiles: [
                             ...(m.photos ? m.photos.map((photo, i) => ({ name: `Image ${i + 1}`, url: photo, type: 'image/jpeg' })) : []),
                             ...(m.videos ? m.videos.map((video, i) => ({ name: `Video ${i + 1}`, url: video, type: 'video/mp4' })) : []),
                             ...(m.voiceNotes ? m.voiceNotes.map((audio, i) => ({ name: `Audio ${i + 1}`, url: audio, type: 'audio/mpeg' })) : [])
                         ],
                         milestone: m.milestone || false,
-                        visibility: m.visibility || (m.isPublic ? 'public' : 'private')
+                        visibility: m.visibility || (m.is_public ? 'public' : 'private')
                     };
                 });
                 setMemories(formattedMemories);
@@ -150,7 +152,7 @@ const Timeline = () => {
                 const res = await axios.put(`/api/memories/${editId}`, formData, config);
                 const m = res.data;
                 let dateStr = 'Unknown Date';
-                if (m.date) { try { dateStr = new Date(m.date).toISOString().split('T')[0]; } catch (e) { } }
+                if (m.date) { try { dateStr = new Date(m.date).toISOString().split('T')[0]; } catch (_) { console.error('Date error', _); } }
                 const updatedFormattedMemory = {
                     id: m.id,
                     title: m.title,
@@ -173,7 +175,7 @@ const Timeline = () => {
                 const res = await axios.post('/api/memories', formData, config);
                 const m = res.data;
                 let dateStr = 'Unknown Date';
-                if (m.date) { try { dateStr = new Date(m.date).toISOString().split('T')[0]; } catch (e) { } }
+                if (m.date) { try { dateStr = new Date(m.date).toISOString().split('T')[0]; } catch (_) { console.error('Date error', _); } }
                 const newFormattedMemory = {
                     id: m.id,
                     title: m.title,
@@ -185,9 +187,9 @@ const Timeline = () => {
                     milestone: m.milestone || m.is_milestone || false,
                     visibility: m.visibility || (m.isPublic !== undefined ? (m.isPublic ? 'public' : 'private') : (m.is_public ? 'public' : 'private')),
                     attachedFiles: [
-                        ...(m.photos ? m.photos.map((photo, i) => ({ name: `Attachment`, url: photo, type: 'image/jpeg' })) : []),
-                        ...(m.videos ? m.videos.map((video, i) => ({ name: `Video`, url: video, type: 'video/mp4' })) : []),
-                        ...(m.voiceNotes ? m.voiceNotes.map((audio, i) => ({ name: `Audio`, url: audio, type: 'audio/mpeg' })) : [])
+                        ...(m.photos ? m.photos.map((photo, _) => ({ name: `Attachment`, url: photo, type: 'image/jpeg' })) : []),
+                        ...(m.videos ? m.videos.map((video, _) => ({ name: `Video`, url: video, type: 'video/mp4' })) : []),
+                        ...(m.voiceNotes ? m.voiceNotes.map((audio, _) => ({ name: `Audio`, url: audio, type: 'audio/mpeg' })) : [])
                     ]
                 };
                 setMemories([newFormattedMemory, ...memories]);
@@ -233,8 +235,24 @@ const Timeline = () => {
         }
     };
 
-    const toggleFavorite = (id) => {
-        setMemories(memories.map(m => m.id === id ? { ...m, isFavorite: !m.isFavorite } : m));
+    const toggleFavorite = async (id) => {
+        if (!user) return;
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const res = await axios.post(`/api/memories/${id}/like`, {}, config);
+
+            setMemories(memories.map(m => {
+                if (m.id === id) {
+                    const newLikes = res.data.liked
+                        ? [...(m.likes || []), user.id]
+                        : (m.likes || []).filter(uid => uid !== user.id);
+                    return { ...m, isFavorite: res.data.liked, likes: newLikes };
+                }
+                return m;
+            }));
+        } catch (error) {
+            console.error("Error toggling like:", error);
+        }
     };
 
     const handleMediaUpload = (e) => {
@@ -604,105 +622,112 @@ const Timeline = () => {
                                 <div className="h-px bg-indigo-100 dark:bg-indigo-900/30 flex-1 ml-4 rounded-full"></div>
                             </div>
 
-                            <div className="relative border-l-2 border-indigo-100 dark:border-slate-800 ml-4 md:ml-8 pl-8 md:pl-12 flex flex-col gap-12">
+                            <div className="relative border-l-2 border-indigo-100 dark:border-slate-800 ml-4 md:ml-8 pl-8 md:pl-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
                                 {memoriesInGroup.map((memory, index) => (
                                     <motion.div
                                         key={memory.id}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: index * 0.1 }}
-                                        className="relative"
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: index * 0.05 }}
+                                        className="relative group h-full flex flex-col"
                                     >
-                                        <div className="absolute -left-[41px] md:-left-[57px] top-6 w-5 h-5 rounded-full bg-white dark:bg-slate-900 border-4 border-indigo-500 shadow-sm z-10"></div>
 
-                                        <div className="glass-panel p-6 md:p-8 rounded-[2.5rem] shadow-xl shadow-black/5 dark:shadow-white/5 group hover:border-indigo-500/30 transition-all">
-                                            <div className="flex justify-between items-start mb-6">
-                                                <div>
-                                                    <div className="flex flex-wrap items-center gap-3 mb-2">
-                                                        <h3 className="text-3xl font-black text-slate-900 dark:text-white">{memory.title}</h3>
-                                                        <div className="flex gap-2">
-                                                            {memory.milestone && (
-                                                                <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-sm flex items-center gap-1 uppercase tracking-wider">
-                                                                    <Star size={10} fill="currentColor" /> Milestone
-                                                                </span>
-                                                            )}
-                                                            {memory.visibility === 'public' ? (
-                                                                <span className="bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-[10px] font-black px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800 shadow-sm flex items-center gap-1 uppercase tracking-wider">
-                                                                    <Globe size={10} /> Public
-                                                                </span>
-                                                            ) : memory.visibility === 'friends' ? (
-                                                                <span className="bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-[10px] font-black px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-800 shadow-sm flex items-center gap-1 uppercase tracking-wider">
-                                                                    <Users size={10} /> Friends Only
-                                                                </span>
-                                                            ) : (
-                                                                <span className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-black px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-1 uppercase tracking-wider">
-                                                                    <Lock size={10} /> Private
-                                                                </span>
-                                                            )}
-                                                        </div>
+
+                                        <div className="glass-panel rounded-[2.5rem] shadow-xl shadow-black/5 dark:shadow-white/5 group hover:border-indigo-500/30 transition-all overflow-hidden flex flex-col h-full">
+                                            {/* Media Section - Pinterest/Grid style */}
+                                            <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                                {memory.attachedFiles && memory.attachedFiles.length > 0 ? (
+                                                    <div className="w-full h-full">
+                                                        {memory.attachedFiles[0].type?.startsWith('video') ? (
+                                                            <video src={memory.attachedFiles[0].url} className="w-full h-full object-cover" />
+                                                        ) : memory.attachedFiles[0].type?.startsWith('audio') ? (
+                                                            <div className="w-full h-full flex items-center justify-center bg-rose-50 dark:bg-rose-900/10 text-rose-500">
+                                                                <Mic size={40} />
+                                                            </div>
+                                                        ) : (
+                                                            <img
+                                                                src={memory.attachedFiles[0].url}
+                                                                alt="thumbnail"
+                                                                onClick={() => setSelectedImage({ url: memory.attachedFiles[0].url, index: 0, allFiles: memory.attachedFiles.filter(f => !f.type?.startsWith('video') && !f.type?.startsWith('audio')) })}
+                                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 cursor-zoom-in"
+                                                            />
+                                                        )}
                                                     </div>
-                                                    <div className="flex flex-wrap gap-5 text-sm font-bold opacity-60">
-                                                        <span className="flex items-center gap-2 text-indigo-500"><Calendar size={16} /> {memory.date}</span>
-                                                        {memory.location && <span className="flex items-center gap-2 text-rose-500"><MapPin size={16} /> {memory.location}</span>}
+                                                ) : (
+                                                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2">
+                                                        <ImageIcon size={40} />
+                                                        <span className="text-[10px] font-black uppercase">No Media</span>
                                                     </div>
+                                                )}
+
+                                                {/* Overlay Badges */}
+                                                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                                                    {memory.milestone && (
+                                                        <span className="bg-amber-400 text-white text-[8px] font-black uppercase px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg">
+                                                            <Star size={8} fill="currentColor" /> Milestone
+                                                        </span>
+                                                    )}
+                                                    {memory.visibility === 'public' ? (
+                                                        <span className="bg-emerald-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg">
+                                                            <Globe size={8} /> Public
+                                                        </span>
+                                                    ) : memory.visibility === 'friends' ? (
+                                                        <span className="bg-indigo-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg">
+                                                            <Users size={8} /> Friends
+                                                        </span>
+                                                    ) : (
+                                                        <span className="bg-slate-700 text-white text-[8px] font-black uppercase px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg">
+                                                            <Lock size={8} /> Private
+                                                        </span>
+                                                    )}
                                                 </div>
 
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => navigator.clipboard.writeText(`${window.location.origin}/public/${memory.id}`).then(() => alert('Public share link copied to clipboard!'))}
-                                                        className="p-3 rounded-xl transition-all hover:bg-indigo-50 dark:hover:bg-slate-800/80 text-indigo-500 hover:scale-110 active:scale-95"
-                                                        title="Share"
-                                                    >
-                                                        <Share2 size={20} />
+                                                {/* Edit/Delete Actions Overlay */}
+                                                <div className="absolute top-4 right-4 flex gap-2 z-20 opacity-100 transition-opacity">
+                                                    <button onClick={() => handleEdit(memory)} className="p-2 bg-white/90 dark:bg-slate-900/90 text-indigo-600 rounded-xl hover:bg-white transition-all shadow-lg hover:scale-110">
+                                                        <Edit3 size={16} />
                                                     </button>
-                                                    <button
-                                                        onClick={() => toggleFavorite(memory.id)}
-                                                        className={`p-3 rounded-xl transition-all hover:scale-110 active:scale-95 ${memory.isFavorite ? 'bg-rose-100 text-rose-500 dark:bg-rose-900/40 shadow-sm' : 'bg-gray-100 text-gray-400 dark:bg-slate-800/80'}`}
-                                                    >
-                                                        <Heart size={20} fill={memory.isFavorite ? "currentColor" : "none"} strokeWidth={memory.isFavorite ? 0 : 2} />
+                                                    <button onClick={() => handleDelete(memory.id)} className="p-2 bg-white/90 dark:bg-slate-900/90 text-red-500 rounded-xl hover:bg-white transition-all shadow-lg hover:scale-110">
+                                                        <Trash2 size={16} />
                                                     </button>
-                                                    <div className="hidden group-hover:flex gap-2 pl-2 border-l border-gray-100 dark:border-slate-800 ml-2">
-                                                        <button onClick={() => handleEdit(memory)} className="p-3 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-all hover:scale-110">
-                                                            <Edit3 size={20} />
-                                                        </button>
-                                                        <button onClick={() => handleDelete(memory.id)} className="p-3 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl hover:bg-red-100 transition-all hover:scale-110">
-                                                            <Trash2 size={20} />
-                                                        </button>
-                                                    </div>
                                                 </div>
                                             </div>
 
-                                            {memory.attachedFiles && memory.attachedFiles.length > 0 && (
-                                                <div className={`mb-8 grid gap-4 ${memory.attachedFiles.length === 1 ? 'grid-cols-1' : memory.attachedFiles.length === 2 ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'} rounded-[2rem] overflow-hidden shadow-2xl`}>
-                                                    {memory.attachedFiles.map((file, idx) => {
-                                                        if (file.type?.startsWith('video')) {
-                                                            return <video key={idx} src={file.url} controls className={`w-full ${memory.attachedFiles.length === 1 ? 'h-[400px]' : 'h-64'} object-cover`} />
-                                                        } else if (file.type?.startsWith('audio')) {
-                                                            return <audio key={idx} src={file.url} controls className="w-full h-16 mt-4 col-span-full border-4 border-indigo-50 dark:border-slate-800 rounded-full px-2" />
-                                                        } else {
-                                                            const allImages = memory.attachedFiles.filter(f => !f.type?.startsWith('video') && !f.type?.startsWith('audio'));
-                                                            return (
-                                                                <img
-                                                                    key={idx}
-                                                                    src={file.url}
-                                                                    alt="attachment"
-                                                                    onClick={() => setSelectedImage({ url: file.url, index: allImages.findIndex(img => img.url === file.url), allFiles: allImages })}
-                                                                    className={`w-full ${memory.attachedFiles.length === 1 ? 'h-[500px]' : 'h-64'} object-cover hover:scale-105 transition-transform duration-1000 cursor-pointer`}
-                                                                />
-                                                            );
-                                                        }
-                                                    })}
+                                            {/* Info Section */}
+                                            <div className="p-6 flex flex-col flex-1">
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">
+                                                            <Calendar size={12} /> {memory.date}
+                                                        </div>
+                                                        <h3 className="text-xl font-black text-slate-900 dark:text-white truncate group-hover:text-indigo-600 transition-colors">{memory.title}</h3>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => toggleFavorite(memory.id)}
+                                                        className={`p-2 rounded-xl transition-all ${memory.isFavorite ? 'text-rose-500' : 'text-slate-300 hover:text-rose-400'}`}
+                                                    >
+                                                        <Heart size={20} fill={memory.isFavorite ? "currentColor" : "none"} strokeWidth={memory.isFavorite ? 0 : 2} />
+                                                    </button>
                                                 </div>
-                                            )}
 
-                                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-8 text-xl font-medium whitespace-pre-line">{memory.description}</p>
+                                                {memory.location && (
+                                                    <div className="flex items-center gap-1 text-[10px] font-bold text-rose-500 uppercase tracking-tight mb-3">
+                                                        <MapPin size={12} /> {memory.location}
+                                                    </div>
+                                                )}
 
-                                            <div className="flex flex-wrap items-center gap-3 pt-6 border-t border-gray-100 dark:border-slate-800/50">
-                                                {memory.tags.map((tag, idx) => (
-                                                    <span key={idx} className="px-4 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-xs font-black rounded-full flex items-center gap-2 uppercase tracking-tight">
-                                                        <Tag size={12} strokeWidth={3} /> {tag}
-                                                    </span>
-                                                ))}
+                                                <p className="text-slate-600 dark:text-slate-400 text-sm line-clamp-3 font-medium leading-relaxed mb-4 flex-1">
+                                                    {memory.description}
+                                                </p>
+
+                                                <div className="flex flex-wrap gap-1.5 mt-auto pt-4 border-t border-gray-50 dark:border-slate-800/50">
+                                                    {memory.tags.slice(0, 3).map((tag, idx) => (
+                                                        <span key={idx} className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-black rounded-full uppercase tracking-tighter">
+                                                            #{tag}
+                                                        </span>
+                                                    ))}
+                                                    {memory.tags.length > 3 && <span className="text-[10px] font-black text-slate-300">+{memory.tags.length - 3}</span>}
+                                                </div>
                                             </div>
                                         </div>
                                     </motion.div>

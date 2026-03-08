@@ -1,24 +1,22 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useState, useEffect } from 'react';
 
 export const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-    const [theme, setTheme] = useState('light');
+    const [theme, setTheme] = useState(() => {
+        const storedTheme = localStorage.getItem('theme');
+        if (storedTheme) return storedTheme;
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    });
 
     useEffect(() => {
-        const storedTheme = localStorage.getItem('theme');
-        if (storedTheme) {
-            setTheme(storedTheme);
-            if (storedTheme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            setTheme('dark');
+        if (theme === 'dark') {
             document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
         }
-    }, []);
+    }, [theme]);
 
     const toggleTheme = () => {
         if (theme === 'light') {

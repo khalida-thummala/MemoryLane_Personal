@@ -53,11 +53,19 @@ const Profile = () => {
         setIsUpdatingProfile(true);
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const { data } = await axios.put('/api/auth/profile', { username: newUsername }, config);
+            // Send both provided fields as username and full_name to satisfy display priorities
+            const { data } = await axios.put('/api/auth/profile', {
+                username: newUsername,
+                full_name: newUsername
+            }, config);
 
-            // Assuming updateUser handles updating the context
+            // Re-map the response to the context structure
             if (updateUser) {
-                updateUser({ ...user, ...data });
+                updateUser({
+                    ...user,
+                    ...data,
+                    name: data.full_name || data.username || newUsername
+                });
             }
 
             alert('Profile updated successfully!');

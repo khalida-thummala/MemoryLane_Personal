@@ -1,9 +1,18 @@
+import mongoose from 'mongoose';
 import Joi from 'joi';
 
-/**
- * Supabase Table: public.profiles
- * Columns: id (uuid), username (text), full_name (text), avatar_url (text), created_at (timestamptz)
- */
+const userSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    username: { type: String, unique: true, sparse: true },
+    avatar_url: String,
+    role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    created_at: { type: Date, default: Date.now },
+    updated_at: { type: Date, default: Date.now }
+}, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
+
+const User = mongoose.model('User', userSchema);
 
 export const validateUserUpdate = (data) => {
     const schema = Joi.object({
@@ -23,3 +32,6 @@ export const validateRegistration = (data) => {
     });
     return schema.validate(data);
 };
+
+export default User;
+

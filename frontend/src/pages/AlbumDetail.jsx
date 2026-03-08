@@ -1,17 +1,22 @@
 import { useState, useEffect, useContext } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Plus, Image as ImageIcon, Trash2, Calendar, MapPin, Tag, Users, Share2, Search, UserPlus, CheckCircle, Clock, X, ChevronLeft } from 'lucide-react';
+import { ArrowLeft, Plus, Image as ImageIcon, Trash2, Calendar, MapPin, Tag, Users, Search, UserPlus, CheckCircle, Clock, X, ChevronLeft, Settings2, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
 
 const AlbumDetail = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
     const { user } = useContext(AuthContext);
     const [album, setAlbum] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedImage, setSelectedImage] = useState(null);
+
+    // Album edit state
+    const [isEditAlbumOpen, setIsEditAlbumOpen] = useState(false);
+    const [editAlbumData, setEditAlbumData] = useState({ title: '', description: '' });
 
     // Modal state for adding memories
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -19,15 +24,16 @@ const AlbumDetail = () => {
     const [loadingMemories, setLoadingMemories] = useState(false);
 
     // Collab State
-    const [inviteLink, setInviteLink] = useState('');
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [friendSearchTerm, setFriendSearchTerm] = useState('');
     const [foundUsers, setFoundUsers] = useState([]);
     const [searchingFriends, setSearchingFriends] = useState(false);
     const [invitedUsers, setInvitedUsers] = useState(new Set());
+    const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
 
     useEffect(() => {
         fetchAlbum();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     const fetchAlbum = async () => {
@@ -50,13 +56,14 @@ const AlbumDetail = () => {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             const { data } = await axios.get('/api/memories', config);
 
-            // Filter out memories that are already in the album
-            const existingMemoryIds = album.memories.map(m => m.id);
-            const filteredMemories = data.filter(m => !existingMemoryIds.includes(m.id));
+            // Filter out memories already in this album
+            const existingMemoryIds = (album?.memories || []).map(m => m?.id).filter(Boolean);
+            const filteredMemories = (data || []).filter(m => !existingMemoryIds.includes(m.id));
 
             setAvailableMemories(filteredMemories);
         } catch (err) {
             console.error('Error fetching memories:', err);
+            setAvailableMemories([]);
         } finally {
             setLoadingMemories(false);
         }
@@ -141,25 +148,79 @@ const AlbumDetail = () => {
     if (error) return <div className="text-center text-red-500 py-10">{error}</div>;
     if (!album) return <div className="text-center py-10">Album not found.</div>;
 
+    // Derive ownership — compare user_id strings directly
+    const isAlbumOwner = user && String(album.user_id) === String(user.id);
+
+    const handleEditAlbum = async (e) => {
+        e.preventDefault();
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const { data } = await axios.put(`/api/albums/${id}`, editAlbumData, config);
+            setAlbum(prev => ({ ...prev, title: data.title || editAlbumData.title, description: data.description || editAlbumData.description }));
+            setIsEditAlbumOpen(false);
+        } catch (err) {
+            console.error('Error updating album:', err);
+            alert('Failed to update album.');
+        }
+    };
+
+    const handleDeleteAlbum = async () => {
+        if (!window.confirm('Delete this entire album? This cannot be undone.')) return;
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            await axios.delete(`/api/albums/${id}`, config);
+            navigate('/albums');
+        } catch (err) {
+            console.error('Error deleting album:', err);
+            alert('Failed to delete album.');
+        }
+    };
+
     return (
         <div className="py-8 max-w-6xl mx-auto relative px-4">
             {/* Header */}
-            <div className="flex items-center gap-4 mb-8">
-                <Link to="/albums" className="p-2 bg-gray-100 dark:bg-slate-800 rounded-full hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">
+            <div className="flex items-center gap-4 mb-8 flex-wrap">
+                <Link to="/albums" className="p-2 bg-gray-100 dark:bg-slate-800 rounded-full hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors shrink-0">
                     <ArrowLeft size={24} className="text-gray-600 dark:text-gray-300" />
                 </Link>
-                <div>
-                    <h1 className="text-3xl font-bold text-indigo-600">{album.title}</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">{album.description}</p>
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-3xl font-bold text-indigo-600 truncate">{album.title}</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">{album.description}</p>
                 </div>
 
-                <div className="ml-auto flex gap-3">
+                <div className="ml-auto flex gap-2 shrink-0 flex-wrap">
+                    {/* Owner-only: Edit & Delete album */}
+                    {isAlbumOwner && (
+                        <>
+                            <button
+                                onClick={() => { setEditAlbumData({ title: album.title, description: album.description || '' }); setIsEditAlbumOpen(true); }}
+                                className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors flex items-center gap-2 font-semibold"
+                                title="Edit album"
+                            >
+                                <Edit3 size={16} /> <span className="hidden md:inline">Edit</span>
+                            </button>
+                            <button
+                                onClick={handleDeleteAlbum}
+                                className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors flex items-center gap-2 font-semibold"
+                                title="Delete album"
+                            >
+                                <Trash2 size={16} /> <span className="hidden md:inline">Delete</span>
+                            </button>
+                        </>
+                    )}
                     <button
                         onClick={handleInvite}
                         className="px-4 py-2 bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 rounded-xl hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors flex items-center gap-2 font-medium"
                         title="Invite Collaborators"
                     >
-                        <Users size={20} /> <span className="hidden md:inline">Invite</span>
+                        <UserPlus size={18} /> <span className="hidden md:inline">Invite</span>
+                    </button>
+                    <button
+                        onClick={() => setIsMembersModalOpen(true)}
+                        className="px-4 py-2 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center gap-2 font-medium"
+                        title="View Members"
+                    >
+                        <Users size={18} /> <span className="hidden md:inline">Members</span>
                     </button>
                     <button
                         onClick={handleOpenAddModal}
@@ -187,7 +248,7 @@ const AlbumDetail = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {album.memories.filter(m => m !== null).map((memory) => {
                         let dateStr = 'Unknown Date';
-                        if (memory.date) { try { dateStr = new Date(memory.date).toISOString().split('T')[0]; } catch (e) { } }
+                        if (memory.date) { try { dateStr = new Date(memory.date).toISOString().split('T')[0]; } catch (_) { console.error('Date error:', _); } }
 
                         return (
                             <motion.div
@@ -200,13 +261,13 @@ const AlbumDetail = () => {
                                     {memory.photos && memory.photos.length > 0 ? (
                                         <div className={`grid gap-1 ${memory.photos.length === 1 ? 'grid-cols-1' : memory.photos.length === 2 ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}>
                                             {memory.photos.map((photoUrl, idx) => {
-                                                const formattedUrl = photoUrl.startsWith('http') ? photoUrl : `http://localhost:5001/${photoUrl.replace(/\\/g, '/').replace(/^\//, '')}`;
+                                                const formattedUrl = photoUrl.startsWith('http') ? photoUrl : `http://localhost:5000/${photoUrl.replace(/\\/g, '/').replace(/^\//, '')}`;
                                                 return (
                                                     <img
                                                         key={idx}
                                                         src={formattedUrl}
                                                         alt={`${memory.title} img ${idx}`}
-                                                        onClick={() => setSelectedImage({ url: formattedUrl, index: idx, allFiles: memory.photos.map(p => ({ url: p.startsWith('http') ? p : `http://localhost:5001/${p.replace(/\\/g, '/').replace(/^\//, '')}` })) })}
+                                                        onClick={() => setSelectedImage({ url: formattedUrl, index: idx, allFiles: memory.photos.map(p => ({ url: p.startsWith('http') ? p : `http://localhost:5000/${p.replace(/\\/g, '/').replace(/^\//, '')}` })) })}
                                                         className={`w-full object-cover cursor-pointer hover:opacity-80 transition-opacity ${memory.photos.length === 1 ? 'h-64' : 'h-32'}`}
                                                     />
                                                 );
@@ -218,13 +279,19 @@ const AlbumDetail = () => {
                                         </div>
                                     )}
                                     <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); handleRemoveMemory(memory.id); }}
-                                        className="absolute top-3 right-3 p-2 bg-red-500/90 hover:bg-red-600 text-white rounded-full backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all shadow-xl hover:scale-110 active:scale-95"
-                                        title="Remove from album"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    {/* Remove from album — memory creator OR album owner can remove */}
+                                    {user && (String(memory.user_id) === String(user.id) || String(memory.addedBy?.id) === String(user.id) || isAlbumOwner) && (
+                                        <div className="absolute top-4 right-4 flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleRemoveMemory(memory.id); }}
+                                                className="p-2 bg-red-500/90 hover:bg-red-600 text-white rounded-full backdrop-blur-md shadow-xl hover:scale-110 active:scale-95"
+                                                title="Remove from album"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    )}
+
                                 </div>
                                 <div className="p-5 flex-1 flex flex-col">
                                     <h3 className="text-lg font-bold truncate mb-2 text-slate-800 dark:text-white">{memory.title}</h3>
@@ -242,22 +309,85 @@ const AlbumDetail = () => {
                                         {memory.description}
                                     </p>
 
-                                    <div className="flex flex-wrap gap-2">
-                                        {memory.tags && memory.tags.slice(0, 3).map((tag, idx) => (
-                                            <span key={idx} className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded flex items-center gap-1">
-                                                <Tag size={10} /> {tag}
+                                    <div className="mt-auto pt-4 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-[10px] font-bold text-white overflow-hidden ring-2 ring-white dark:ring-slate-900">
+                                                {(memory.addedBy?.avatar_url || memory.user?.avatar_url)
+                                                    ? <img src={memory.addedBy?.avatar_url || memory.user?.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                                                    : (memory.addedBy?.full_name || memory.addedBy?.username || memory.user?.full_name || memory.user?.username || '?').charAt(0).toUpperCase()
+                                                }
+                                            </div>
+                                            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                                                {isAlbumOwner && String(memory.user_id) === String(user.id) && <span title="Album owner">👑</span>}
+                                                {memory.addedBy?.full_name || memory.addedBy?.username || memory.user?.full_name || memory.user?.username || 'User'}
                                             </span>
-                                        ))}
-                                        {memory.tags && memory.tags.length > 3 && (
-                                            <span className="text-xs text-gray-500 ml-1">+{memory.tags.length - 3}</span>
-                                        )}
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {memory.tags && memory.tags.slice(0, 2).map((tag, idx) => (
+                                                <span key={idx} className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded flex items-center gap-1">
+                                                    <Tag size={10} /> {tag}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
+
                             </motion.div>
                         );
                     })}
                 </div>
             )}
+
+            {/* Edit Album Modal */}
+            <AnimatePresence>
+                {isEditAlbumOpen && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-md p-8 shadow-2xl border border-indigo-50 dark:border-slate-800"
+                        >
+                            <h2 className="text-2xl font-black mb-6 text-indigo-600 tracking-tight">Edit Album</h2>
+                            <form onSubmit={handleEditAlbum} className="flex flex-col gap-5">
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest mb-2 opacity-40">Title</label>
+                                    <input
+                                        type="text"
+                                        value={editAlbumData.title}
+                                        onChange={(e) => setEditAlbumData({ ...editAlbumData, title: e.target.value })}
+                                        className="w-full px-5 py-3 rounded-2xl bg-indigo-50 dark:bg-slate-800 border border-transparent focus:border-indigo-400 outline-none font-bold"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest mb-2 opacity-40">Description</label>
+                                    <textarea
+                                        value={editAlbumData.description}
+                                        onChange={(e) => setEditAlbumData({ ...editAlbumData, description: e.target.value })}
+                                        className="w-full px-5 py-3 rounded-2xl bg-indigo-50 dark:bg-slate-800 border border-transparent focus:border-indigo-400 outline-none font-semibold text-sm h-24 resize-none"
+                                    />
+                                </div>
+                                <div className="flex gap-3 mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsEditAlbumOpen(false)}
+                                        className="flex-1 py-3 rounded-2xl font-black text-xs uppercase opacity-40 hover:opacity-100 transition-opacity"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="flex-[2] py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 transition-colors"
+                                    >
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Add Memory Modal */}
             <AnimatePresence>
@@ -291,7 +421,7 @@ const AlbumDetail = () => {
                                             return (
                                                 <div key={memory.id} className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-200 dark:border-slate-700 flex items-center gap-3">
                                                     {displayImg ? (
-                                                        <img src={displayImg.startsWith('http') ? displayImg : `http://localhost:5001/${displayImg.replace(/\\/g, '/').replace(/^\//, '')}`} alt="thumb" className="w-16 h-16 object-cover rounded-lg" />
+                                                        <img src={displayImg.startsWith('http') ? displayImg : `http://localhost:5000/${displayImg.replace(/\\/g, '/').replace(/^\//, '')}`} alt="thumb" className="w-16 h-16 object-cover rounded-lg" />
                                                     ) : (
                                                         <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
                                                             <ImageIcon size={20} className="text-gray-400" />
@@ -299,7 +429,7 @@ const AlbumDetail = () => {
                                                     )}
                                                     <div className="flex-1 min-w-0">
                                                         <h4 className="font-semibold text-sm truncate">{memory.title}</h4>
-                                                        <p className="text-xs opacity-60 truncate">{new Date(memory.date).toISOString().split('T')[0]}</p>
+                                                        <p className="text-xs opacity-60 truncate">{memory.date || memory.memory_date ? new Date(memory.date || memory.memory_date).toISOString().split('T')[0] : 'No date'}</p>
                                                     </div>
                                                     <button
                                                         onClick={() => handleAddMemoryToAlbum(memory.id)}
@@ -327,7 +457,114 @@ const AlbumDetail = () => {
                 )}
             </AnimatePresence>
 
-            {/* Invite Friends Modal */}
+            {/* Members List Modal */}
+            <AnimatePresence>
+                {isMembersModalOpen && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col"
+                        >
+                            <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+                                <h2 className="text-xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                                    <Users size={24} /> Album Members
+                                </h2>
+                                <button
+                                    onClick={() => setIsMembersModalOpen(false)}
+                                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 overflow-y-auto max-h-[60vh]">
+                                <div className="space-y-4">
+                                    {/* Owner first */}
+                                    <div className="flex items-center justify-between p-3 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100/50 dark:border-indigo-900/20">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold ring-2 ring-indigo-200 dark:ring-indigo-900/50">
+                                                {album.owner?.avatar_url ? (
+                                                    <img src={album.owner.avatar_url} alt="owner" className="w-full h-full object-cover rounded-full" />
+                                                ) : (
+                                                    (album.owner?.username || 'O').charAt(0).toUpperCase()
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-800 dark:text-white flex items-center gap-1.5 text-sm">
+                                                    {album.owner?.full_name || album.owner?.username || 'Owner'}
+                                                    <span className="text-[10px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-md uppercase tracking-wider font-black">Admin</span>
+                                                </p>
+                                                <p className="text-xs opacity-50 font-medium">@{album.owner?.username || 'owner'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Other Members */}
+                                    {album.members?.filter(m => m.status === 'accepted' || !m.status).map((member, idx) => (
+                                        <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold">
+                                                    {member.profile?.avatar_url ? (
+                                                        <img src={member.profile.avatar_url} alt="member" className="w-full h-full object-cover rounded-full" />
+                                                    ) : (
+                                                        (member.profile?.username || 'M').charAt(0).toUpperCase()
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-800 dark:text-white text-sm">
+                                                        {member.profile?.full_name || member.profile?.username || 'Member'}
+                                                    </p>
+                                                    <p className="text-xs opacity-50 font-medium lowercase">@{member.profile?.username || 'member'}</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] font-black uppercase tracking-widest opacity-30">{member.role || 'Editor'}</span>
+                                        </div>
+                                    ))}
+
+                                    {/* Pending Members */}
+                                    {album.members?.filter(m => m.status === 'pending').map((member, idx) => (
+                                        <div key={`pending-${idx}`} className="flex items-center justify-between p-3 bg-amber-50/30 dark:bg-amber-900/5 rounded-2xl border border-dashed border-amber-200/50 dark:border-amber-900/20 opacity-70">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold">
+                                                    {member.profile?.avatar_url ? (
+                                                        <img src={member.profile.avatar_url} alt="pending" className="w-full h-full object-cover rounded-full" />
+                                                    ) : (
+                                                        (member.profile?.username || 'P').charAt(0).toUpperCase()
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-800 dark:text-white text-sm">
+                                                        {member.profile?.full_name || member.profile?.username || 'Guest'}
+                                                    </p>
+                                                    <p className="text-[9px] font-black uppercase text-amber-600 tracking-tighter">Waiting for response...</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Pending</span>
+                                        </div>
+                                    ))}
+
+                                    {(!album.members || album.members.length === 0) && (
+                                        <div className="text-center py-8 opacity-40">
+                                            <p className="text-sm font-medium">No other members yet.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="p-6 bg-slate-50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800">
+                                <button
+                                    onClick={() => { setIsMembersModalOpen(false); handleInvite(); }}
+                                    className="w-full py-3 bg-indigo-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
+                                >
+                                    <UserPlus size={18} /> Invite More People
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
             <AnimatePresence>
                 {isInviteModalOpen && (
                     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">

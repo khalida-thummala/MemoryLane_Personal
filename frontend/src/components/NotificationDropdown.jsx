@@ -8,12 +8,6 @@ const NotificationDropdown = () => {
     const [notifications, setNotifications] = useState([]);
     const dropdownRef = useRef(null);
 
-    useEffect(() => {
-        fetchNotifications();
-        const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
-        return () => clearInterval(interval);
-    }, []);
-
     const fetchNotifications = async () => {
         try {
             const res = await axios.get('/api/friends/notifications');
@@ -22,6 +16,13 @@ const NotificationDropdown = () => {
             console.error('Error fetching notifications:', error);
         }
     };
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
+        return () => clearInterval(interval);
+    }, []);
 
     const markAsRead = async (id) => {
         try {
@@ -66,7 +67,7 @@ const NotificationDropdown = () => {
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute right-0 mt-4 w-80 md:w-96 glass-panel rounded-3xl shadow-2xl border border-black/5 dark:border-white/10 overflow-hidden z-50"
+                        className="absolute right-0 mt-4 w-80 md:w-96 glass-panel rounded-3xl shadow-2xl border border-black/5 dark:border-white/10 overflow-hidden z-[200]"
                     >
                         <div className="p-6 border-b border-black/5 dark:border-white/10 bg-indigo-50/50 dark:bg-slate-800/50">
                             <h3 className="font-black text-xl flex items-center gap-2">

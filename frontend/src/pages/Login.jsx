@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { authService } from '../services/api';
 import { Button } from '../components/ui/Button';
 import { supabase } from '../services/supabase';
 import { LogIn, Mail, Lock } from 'lucide-react';
@@ -23,11 +22,21 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const data = await authService.login(email, password);
-            login(data);
+            const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+            if (authError) throw authError;
+
+            // Build user object consistent with AuthContext shape
+            const userData = {
+                id: data.user.id,
+                email: data.user.email,
+                token: data.session.access_token,
+                name: data.user.user_metadata?.full_name || data.user.user_metadata?.name || '',
+                avatar: data.user.user_metadata?.avatar_url || ''
+            };
+            login(userData);
             navigate('/timeline');
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed. Invalid credentials.');
+            setError(err.message || 'Login failed. Please check your credentials.');
         } finally {
             setLoading(false);
         }

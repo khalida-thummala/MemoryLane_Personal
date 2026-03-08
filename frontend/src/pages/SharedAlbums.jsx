@@ -8,19 +8,23 @@ import { AuthContext } from '../context/AuthContext';
 const SharedAlbums = () => {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
+
     const [albums, setAlbums] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
     const [isRequestsModalOpen, setIsRequestsModalOpen] = useState(false);
     const [pendingRequests, setPendingRequests] = useState([]);
-    const [loadingRequests, setLoadingRequests] = useState(false);
+
+    const [editingAlbum, setEditingAlbum] = useState(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editData, setEditData] = useState({ title: '', description: '', is_shared: true });
 
     const getAlbumCover = (album) => {
         if (album.coverImage) return album.coverImage;
+        if (album.cover_url) return album.cover_url;
         if (album.memories && album.memories.length > 0) {
-            const memoryWithDocs = album.memories.find(m => m && m.photos && m.photos.length > 0);
-            if (memoryWithDocs) return memoryWithDocs.photos[0];
+            const memWithPhoto = album.memories.find(m => m?.photos?.length > 0);
+            if (memWithPhoto) return memWithPhoto.photos[0];
         }
         return null;
     };
@@ -31,13 +35,12 @@ const SharedAlbums = () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
                 const { data } = await axios.get('/api/albums', config);
-
-                // Filter only Collaborative Albums: (I am collaborator OR I am owner but it has collaborators)
+                // Show albums that are shared OR where user is a collaborator (not owner)
                 const shared = data.filter(album =>
-                    album.collaborators?.length > 0 ||
-                    (album.collaborators && album.collaborators.includes(user.id))
+                    album.is_shared ||
+                    (album.members && album.members.length > 0) ||
+                    String(album.user_id) !== String(user.id)
                 );
-
                 setAlbums(shared);
                 setLoading(false);
             } catch (err) {
@@ -53,8 +56,9 @@ const SharedAlbums = () => {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
                 const { data } = await axios.get('/api/albums/requests/pending', config);
                 setPendingRequests(data);
-            } catch (err) {
-                console.error('Error fetching requests:', err);
+            } catch (_) {
+                // Endpoint may not exist yet — fail silently
+                console.warn('Pending requests endpoint not available');
             }
         };
 
@@ -62,14 +66,50 @@ const SharedAlbums = () => {
         fetchPendingRequests();
     }, [user]);
 
+    const openEditModal = (album) => {
+        setEditingAlbum(album);
+        setEditData({
+            title: album.title,
+            description: album.description || '',
+            is_shared: album.is_shared ?? true,
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleUpdateAlbum = async (e) => {
+        e.preventDefault();
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const { data } = await axios.put(`/api/albums/${editingAlbum.id}`, editData, config);
+            setAlbums(prev => prev.map(a => a.id === editingAlbum.id ? { ...a, ...data } : a));
+            setIsEditModalOpen(false);
+            setEditingAlbum(null);
+        } catch (_) {
+            console.error('Error updating album:', _);
+            alert('Failed to update album. You may not have permission.');
+        }
+    };
+
+    const handleDeleteAlbum = async (albumId) => {
+        if (!window.confirm('Delete this collaborative album? All members will lose access.')) return;
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            await axios.delete(`/api/albums/${albumId}`, config);
+            setAlbums(prev => prev.filter(a => a.id !== albumId));
+        } catch (_) {
+            console.error('Error deleting album:', _);
+            alert('Failed to delete album. You may not have permission.');
+        }
+    };
+
     const handleAcceptRequest = async (albumId) => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             await axios.post(`/api/albums/${albumId}/accept`, {}, config);
             setPendingRequests(prev => prev.filter(a => a.id !== albumId));
-            window.location.reload(); // Quick refresh to load the new album
-        } catch (err) {
-            console.error('Error accepting:', err);
+            window.location.reload();
+        } catch (_) {
+            console.error('Error:', _);
         }
     };
 
@@ -78,8 +118,8 @@ const SharedAlbums = () => {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             await axios.post(`/api/albums/${albumId}/reject`, {}, config);
             setPendingRequests(prev => prev.filter(a => a.id !== albumId));
-        } catch (err) {
-            console.error('Error rejecting:', err);
+        } catch (_) {
+            console.error('Error rejecting:', _);
         }
     };
 
@@ -101,9 +141,6 @@ const SharedAlbums = () => {
 
     return (
         <div className="py-8 relative max-w-6xl mx-auto overflow-hidden min-h-[80vh]">
-            {/* Background stickers */}
-            <motion.div animate={{ y: [0, -15, 0], rotate: [0, 5, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute top-0 right-10 text-5xl drop-shadow-lg opacity-80 z-0 hidden md:block">🤝</motion.div>
-            <motion.div animate={{ y: [0, 10, 0], rotate: [0, -5, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute bottom-10 left-10 text-5xl drop-shadow-lg opacity-80 z-0 hidden md:block">🌍</motion.div>
 
             <div className="flex justify-between items-center mb-10 relative z-10 px-4">
                 <h1 className="text-3xl font-bold flex items-center gap-3 text-purple-600">
@@ -135,9 +172,14 @@ const SharedAlbums = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-4 relative z-10 mt-8">
-                    {/* Render Shared Albums */}
                     {albums.map((album, index) => {
                         const displayCover = getAlbumCover(album);
+                        // isOwner: user_id on album matches the logged-in user
+                        const isOwner = user && String(album.user_id) === String(user.id);
+                        // owner name: use the joined profile data if available
+                        const ownerProfile = album.owner;
+                        const ownerName = ownerProfile?.full_name || ownerProfile?.username || (isOwner ? (user.name || 'You') : 'A collaborator');
+
                         return (
                             <motion.div
                                 key={album.id}
@@ -145,48 +187,122 @@ const SharedAlbums = () => {
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: index * 0.05 }}
                                 onClick={() => navigate(`/album/${album.id}`)}
-                                className="glass-panel rounded-3xl overflow-hidden shadow-xl shadow-black/5 dark:shadow-white/5 group cursor-pointer border border-transparent hover:border-purple-500/30 transition-all"
+                                className="glass-panel rounded-3xl overflow-hidden shadow-xl shadow-black/5 dark:shadow-white/5 group cursor-pointer border border-transparent hover:border-purple-500/30 transition-all flex flex-col"
                             >
                                 <div className="h-48 bg-gray-200 dark:bg-slate-800 relative overflow-hidden flex items-center justify-center">
                                     {displayCover ? (
-                                        <img src={displayCover.startsWith('http') ? displayCover : `http://localhost:5001/${displayCover.replace(/\\/g, '/').replace(/^\//, '')}`} alt={album.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                        <img src={displayCover.startsWith('http') ? displayCover : `http://localhost:5000/${displayCover.replace(/\\/g, '/').replace(/^\//, '')}`} alt={album.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                     ) : (
                                         <div className="text-slate-400 opacity-50 flex flex-col items-center group-hover:scale-110 transition-transform duration-700">
                                             <ImageIcon size={48} />
                                             <span className="mt-2 text-sm font-medium">No Cover</span>
                                         </div>
                                     )}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+
+                                    {/* Top-left badge */}
                                     <div className="absolute top-4 left-4">
-                                        <span className="px-2 py-1 bg-purple-500/80 backdrop-blur-md rounded-lg text-white text-xs font-bold flex items-center gap-1 shadow-md">
-                                            <Users size={12} /> {album.collaborators?.length || 0} Collaborators
+                                        <span className="px-2 py-1 bg-purple-600/80 backdrop-blur-md rounded-lg text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-md">
+                                            <Users size={11} /> {album.members?.length || 0} Members
                                         </span>
                                     </div>
-                                    <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
-                                        <div>
-                                            <span className="px-2 py-1 bg-white/20 backdrop-blur-md rounded-lg text-white text-xs font-bold mb-2 inline-block">
-                                                {album.memories?.length || 0} Shared Memories
-                                            </span>
-                                            <h3 className="text-xl font-bold text-white truncate w-48">{album.title}</h3>
-                                        </div>
+
+                                    {/* Bottom overlay: title + owner */}
+                                    <div className="absolute bottom-4 left-4 right-4">
+                                        <span className="px-2 py-1 bg-white/15 backdrop-blur-md rounded-lg text-white text-[10px] font-black uppercase tracking-widest mb-2 inline-block">
+                                            {album.memories?.length || 0} Shared Memories
+                                        </span>
+                                        <h3 className="text-xl font-bold text-white truncate leading-tight">{album.title}</h3>
+                                        <p className="text-[10px] text-white/70 font-bold uppercase tracking-widest mt-0.5">
+                                            {isOwner ? '👑 You own this' : `By ${ownerName}`}
+                                        </p>
                                     </div>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation(); // prevent navigation
-                                        }}
-                                        className="absolute top-4 right-4 p-2 bg-black/30 backdrop-blur-md hover:bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all border-none"
-                                    >
-                                        <Settings2 size={16} />
-                                    </button>
+
+                                    {/* Edit/Delete — only for owner, reveal on hover */}
+                                    {isOwner && (
+                                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); openEditModal(album); }}
+                                                className="p-2 bg-white/25 backdrop-blur-md hover:bg-white/50 text-white rounded-xl border border-white/30 shadow-md"
+                                                title="Edit album"
+                                            >
+                                                <Settings2 size={15} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteAlbum(album.id); }}
+                                                className="p-2 bg-red-500/30 backdrop-blur-md hover:bg-red-500 text-white rounded-xl border border-red-400/40 shadow-md"
+                                                title="Delete album"
+                                            >
+                                                <X size={15} />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="p-5">
-                                    <p className="opacity-70 text-sm leading-relaxed line-clamp-2 text-gray-600 dark:text-gray-300">
-                                        {album.description || "No description provided."}
+
+                                <div className="p-5 flex-1 flex flex-col">
+                                    <p className="opacity-60 text-sm leading-relaxed line-clamp-2 text-gray-600 dark:text-gray-300">
+                                        {album.description || 'No description provided.'}
                                     </p>
+                                    <div className="mt-auto pt-4 flex items-center justify-between opacity-40">
+                                        <div className="flex -space-x-1">
+                                            {(album.members || []).slice(0, 3).map((_, i) => (
+                                                <div key={i} className="w-5 h-5 rounded-full bg-purple-300 border border-white" />
+                                            ))}
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Enter →</span>
+                                    </div>
                                 </div>
                             </motion.div>
-                        )
+                        );
                     })}
+                </div>
+            )}
+
+            {/* Edit Album Modal */}
+            {isEditModalOpen && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+                    <motion.div
+                        initial={{ scale: 0.9, y: 20 }}
+                        animate={{ scale: 1, y: 0 }}
+                        className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-md p-8 shadow-2xl border border-purple-100 dark:border-slate-800"
+                    >
+                        <h2 className="text-2xl font-black mb-6 text-purple-600 tracking-tight">Update Album</h2>
+                        <form onSubmit={handleUpdateAlbum} className="flex flex-col gap-5">
+                            <div>
+                                <label className="block text-[10px] font-black uppercase tracking-widest mb-2 opacity-40">Title</label>
+                                <input
+                                    type="text"
+                                    value={editData.title}
+                                    onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                                    className="w-full px-5 py-3 rounded-2xl bg-purple-50 dark:bg-slate-800 border border-transparent focus:border-purple-400 outline-none font-bold"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black uppercase tracking-widest mb-2 opacity-40">Description</label>
+                                <textarea
+                                    value={editData.description}
+                                    onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                                    className="w-full px-5 py-3 rounded-2xl bg-purple-50 dark:bg-slate-800 border border-transparent focus:border-purple-400 outline-none font-semibold text-sm h-24 resize-none"
+                                />
+                            </div>
+                            <div className="flex gap-3 mt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => { setIsEditModalOpen(false); setEditingAlbum(null); }}
+                                    className="flex-1 py-3 rounded-2xl font-black text-xs uppercase opacity-40 hover:opacity-100 transition-opacity"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-[2] py-4 bg-purple-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-purple-600/20 hover:bg-purple-700 transition-colors"
+                                >
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </motion.div>
                 </div>
             )}
 
@@ -196,52 +312,52 @@ const SharedAlbums = () => {
                     <motion.div
                         initial={{ scale: 0.9, y: 20 }}
                         animate={{ scale: 1, y: 0 }}
-                        className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col"
+                        className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col border border-purple-100 dark:border-slate-800"
                     >
-                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-purple-600 dark:text-purple-400">Album Invitations</h2>
+                        <div className="p-7 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+                            <h2 className="text-xl font-black text-purple-600 dark:text-purple-400 uppercase tracking-tight">Album Invitations</h2>
                             <button
                                 onClick={() => setIsRequestsModalOpen(false)}
-                                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                                className="p-2 rounded-2xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
                             >
                                 <X size={20} className="text-gray-500" />
                             </button>
                         </div>
 
-                        <div className="p-6 flex-1 max-h-[60vh] overflow-y-auto bg-gray-50 dark:bg-slate-900/50">
+                        <div className="p-7 flex-1 max-h-[60vh] overflow-y-auto">
                             {pendingRequests.length === 0 ? (
                                 <div className="text-center py-10 opacity-60 flex flex-col items-center">
                                     <Compass size={40} className="mb-3 text-purple-300" />
-                                    <p>No pending invitations.</p>
+                                    <p className="font-bold text-sm">No pending invitations.</p>
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-4">
                                     {pendingRequests.map(album => (
-                                        <div key={album.id} className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
-                                            <div className="w-16 h-16 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                                                {album.coverImage ? (
-                                                    <img src={album.coverImage.startsWith('http') ? album.coverImage : `http://localhost:5001/${album.coverImage.replace(/\\/g, '/').replace(/^\//, '')}`} alt="cover" className="w-full h-full object-cover" />
+                                        <div key={album.id} className="bg-purple-50 dark:bg-slate-800 p-4 rounded-2xl flex items-center gap-4">
+                                            <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-700 flex-shrink-0 flex items-center justify-center overflow-hidden shadow-sm">
+                                                {album.cover_url ? (
+                                                    <img src={album.cover_url} alt="cover" className="w-full h-full object-cover" />
                                                 ) : (
-                                                    <ImageIcon className="text-purple-400" />
+                                                    <ImageIcon className="text-purple-400" size={22} />
                                                 )}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <h4 className="font-bold text-slate-800 dark:text-white truncate">{album.title}</h4>
-                                                <p className="text-xs opacity-60 mt-1 truncate">
-                                                    Invited by <span className="font-semibold text-purple-500">{album.user?.name || 'Someone'}</span>
+                                                <h4 className="font-black text-slate-800 dark:text-white truncate">{album.title}</h4>
+                                                <p className="text-xs opacity-60 mt-1">
+                                                    Invited by <span className="font-bold text-purple-600">{album.owner?.username || album.owner?.full_name || 'Someone'}</span>
                                                 </p>
                                             </div>
                                             <div className="flex gap-2 shrink-0">
                                                 <button
                                                     onClick={() => handleAcceptRequest(album.id)}
-                                                    className="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-xl flex items-center justify-center transition-transform hover:scale-105 shadow-md shadow-green-500/20"
+                                                    className="w-11 h-11 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl flex items-center justify-center shadow-lg"
                                                     title="Accept"
                                                 >
                                                     <Check size={18} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleRejectRequest(album.id)}
-                                                    className="w-10 h-10 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-500 rounded-xl flex items-center justify-center transition-colors"
+                                                    className="w-11 h-11 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 text-red-500 rounded-2xl flex items-center justify-center"
                                                     title="Decline"
                                                 >
                                                     <X size={18} />

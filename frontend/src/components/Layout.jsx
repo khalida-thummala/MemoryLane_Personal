@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Sun, Moon, LogIn, UserPlus, Menu, X, Home, Clock, Image, Map as ReminisceIcon, User, LogOut, Globe, Users, Linkedin, Github, Mail } from 'lucide-react';
 import { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
@@ -10,6 +10,7 @@ const Layout = ({ children }) => {
     const { user, logout, loading: authLoading } = useContext(AuthContext);
     const { theme, toggleTheme } = useContext(ThemeContext);
     const navigate = useNavigate();
+    const location = useLocation();
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
 
     const handleLogout = () => {
@@ -23,6 +24,19 @@ const Layout = ({ children }) => {
             setIsSidebarOpen(false);
         }
     };
+
+    const isActive = (path) => location.pathname === path;
+
+    const navLinkClass = (path) => `
+        flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium relative group
+        ${isActive(path)
+            ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 font-bold'
+            : 'hover:bg-gray-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'}
+    `;
+
+    const activeIndicator = (path) => isActive(path) && (
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-indigo-600 dark:bg-indigo-400 rounded-r-full shadow-[0_0_10px_rgba(79,70,229,0.5)]" />
+    );
 
     return (
         <div className="min-h-screen flex relative">
@@ -46,7 +60,7 @@ const Layout = ({ children }) => {
                     </button>
                 </div>
 
-                <div className="flex-1 flex flex-col gap-2 p-6 overflow-y-auto">
+                <div className="flex-1 flex flex-col gap-2 p-6 overflow-y-auto relative">
                     {authLoading ? (
                         <div className="flex items-center justify-center py-10 opacity-50">
                             <Clock className="animate-spin" />
@@ -54,31 +68,40 @@ const Layout = ({ children }) => {
                     ) : user ? (
                         <>
                             <div className="mb-6 px-4 py-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-indigo-200 dark:bg-indigo-800 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-bold">
-                                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                    {(user.name || user.username || user.email || 'U').charAt(0).toUpperCase()}
                                 </div>
-                                <div className="flex flex-col">
-                                    <span className="font-semibold text-sm">{user.name || 'User Profile'}</span>
-                                    <span className="text-xs opacity-70 truncate max-w-[120px]">{user.email}</span>
+                                <div className="flex flex-col min-w-0">
+                                    <span className="font-bold text-sm text-slate-800 dark:text-white truncate">
+                                        {user.name || user.username || user.email?.split('@')[0] || 'My Account'}
+                                    </span>
+                                    <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[150px]">{user.email}</span>
                                 </div>
                             </div>
-                            <Link to="/timeline" onClick={handleLinkClick} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-800 transition-colors font-medium">
+
+                            <Link to="/timeline" onClick={handleLinkClick} className={navLinkClass('/timeline')}>
+                                {activeIndicator('/timeline')}
                                 <Clock size={20} /> Timeline
                             </Link>
-                            <Link to="/albums" onClick={handleLinkClick} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-800 transition-colors font-medium">
+                            <Link to="/albums" onClick={handleLinkClick} className={navLinkClass('/albums')}>
+                                {activeIndicator('/albums')}
                                 <Image size={20} /> Albums
                             </Link>
-                            <Link to="/shared-albums" onClick={handleLinkClick} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-50 hover:text-purple-600 dark:hover:bg-slate-800 transition-colors font-medium">
-                                <Users size={20} className="text-purple-500" /> Collab Albums
+                            <Link to="/shared-albums" onClick={handleLinkClick} className={navLinkClass('/shared-albums')}>
+                                {activeIndicator('/shared-albums')}
+                                <Users size={20} className={isActive('/shared-albums') ? 'text-indigo-600 dark:text-indigo-400' : 'text-purple-500'} /> Collab Albums
                             </Link>
-                            <Link to="/reminisce" onClick={handleLinkClick} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-800 transition-colors font-medium">
+                            <Link to="/reminisce" onClick={handleLinkClick} className={navLinkClass('/reminisce')}>
+                                {activeIndicator('/reminisce')}
                                 <ReminisceIcon size={20} /> Reminisce
                             </Link>
-                            <Link to="/community" onClick={handleLinkClick} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-800 transition-colors font-medium">
-                                <Globe size={20} className="text-fuchsia-500" /> Community Stream
+                            <Link to="/community" onClick={handleLinkClick} className={navLinkClass('/community')}>
+                                {activeIndicator('/community')}
+                                <Globe size={20} className={isActive('/community') ? 'text-indigo-600 dark:text-indigo-400' : 'text-fuchsia-500'} /> Community Stream
                             </Link>
-                            <Link to="/social" onClick={handleLinkClick} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-800 transition-colors font-medium">
-                                <Users size={20} className="text-emerald-500" /> Social Circle
+                            <Link to="/social" onClick={handleLinkClick} className={navLinkClass('/social')}>
+                                {activeIndicator('/social')}
+                                <Users size={20} className={isActive('/social') ? 'text-indigo-600 dark:text-indigo-400' : 'text-emerald-500'} /> Social Circle
                             </Link>
                         </>
                     ) : (
@@ -91,7 +114,8 @@ const Layout = ({ children }) => {
                 <div className="p-6 border-t border-gray-100 dark:border-slate-800 flex flex-col gap-3">
                     {user ? (
                         <>
-                            <Link to="/profile" onClick={handleLinkClick} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors font-medium">
+                            <Link to="/profile" onClick={handleLinkClick} className={navLinkClass('/profile')}>
+                                {activeIndicator('/profile')}
                                 <User size={20} /> Profile Settings
                             </Link>
                             <button onClick={handleLogout} className="flex flex-row items-center gap-3 w-full text-left px-4 py-3 text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium">

@@ -1,8 +1,8 @@
-import supabase from '../config/supabase.js';
+import { supabase } from '../config/supabase.js';
 
 /**
  * Protect middleware - verifies Supabase JWT from Authorization header
- * Sets req.user = { id, email, ...metadata }
+ * Sets req.user = Supabase User object
  */
 export const protect = async (req, res, next) => {
     let token;
@@ -22,11 +22,7 @@ export const protect = async (req, res, next) => {
             return res.status(401).json({ message: 'Not authorized, token failed' });
         }
 
-        req.user = {
-            id: user.id,
-            email: user.email,
-            ...user.user_metadata,
-        };
+        req.user = user;
         next();
     } catch (error) {
         console.error('Auth middleware error:', error);
@@ -49,11 +45,7 @@ export const optionalProtect = async (req, res, next) => {
     try {
         const { data: { user }, error } = await supabase.auth.getUser(token);
         if (!error && user) {
-            req.user = {
-                id: user.id,
-                email: user.email,
-                ...user.user_metadata,
-            };
+            req.user = user;
         }
     } catch (_) {
         // Ignore and proceed without user
@@ -61,3 +53,6 @@ export const optionalProtect = async (req, res, next) => {
 
     next();
 };
+
+// Alias for use in routes
+export const optionalAuth = optionalProtect;

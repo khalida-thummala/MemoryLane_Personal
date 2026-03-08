@@ -6,40 +6,34 @@ import {
     updateAlbum,
     deleteAlbum,
     addMemoryToAlbum,
-    removeMemoryFromAlbum,
-    generateInviteToken,
-    joinAlbum,
-    sendCollabRequest,
-    acceptCollabRequest,
-    rejectCollabRequest,
-    getPendingRequests
+    getPendingRequests,
+    acceptInvitation,
+    rejectInvitation,
+    inviteCollaborator
 } from '../controllers/albumController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { isAlbumOwner } from '../middleware/ownershipMiddleware.js';
 
 const router = express.Router();
 
-// Apply protect middleware to all routes
 router.use(protect);
 
-router.post('/join/:token', joinAlbum);
-router.post('/:id/invite', generateInviteToken);
+// ── Requests & Collaborations ──────────────────────────────────────────
+router.get('/requests/pending', getPendingRequests);
+router.post('/:id/accept', acceptInvitation);
+router.post('/:id/reject', rejectInvitation);
+router.post('/:id/request', inviteCollaborator);
 
 router.route('/')
     .get(getAlbums)
     .post(createAlbum);
 
-router.get('/requests/pending', getPendingRequests);
-router.post('/:id/request', sendCollabRequest);
-router.post('/:id/accept', acceptCollabRequest);
-router.post('/:id/reject', rejectCollabRequest);
-
 router.route('/:id')
     .get(getAlbumById)
-    .put(updateAlbum)
-    .delete(deleteAlbum);
+    .put(isAlbumOwner, updateAlbum)
+    .delete(isAlbumOwner, deleteAlbum);
 
-router.route('/:id/memories/:memoryId')
-    .post(addMemoryToAlbum)
-    .delete(removeMemoryFromAlbum);
+// For adding memories to communal albums
+router.post('/:id/memories/:memoryId', addMemoryToAlbum);
 
 export default router;

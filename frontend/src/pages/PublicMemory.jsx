@@ -51,7 +51,7 @@ const PublicMemory = () => {
 
     let displayDate = 'Unknown Date';
     if (memory.date) {
-        try { displayDate = new Date(memory.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }); } catch (e) { }
+        try { displayDate = new Date(memory.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }); } catch (_) { console.error('Date error:', _); }
     }
 
     return (
@@ -89,7 +89,7 @@ const PublicMemory = () => {
                     {memory.photos && memory.photos.length > 0 && (
                         <div className={`grid gap-3 mb-10 ${memory.photos.length === 1 ? 'grid-cols-1' : memory.photos.length === 2 ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'} rounded-2xl overflow-hidden shadow-inner bg-slate-100 dark:bg-slate-900 p-3`}>
                             {memory.photos.map((photo, i) => (
-                                <img key={i} src={photo.startsWith('http') ? photo : `http://localhost:5001/${photo.replace(/\\/g, '/').replace(/^\//, '')}`} alt="Memory" className={`w-full object-cover rounded-xl ${memory.photos.length === 1 ? 'h-96' : 'h-48'}`} />
+                                <img key={i} src={photo.startsWith('http') ? photo : `http://localhost:5000/${photo.replace(/\\/g, '/').replace(/^\//, '')}`} alt="Memory" className={`w-full object-cover rounded-xl ${memory.photos.length === 1 ? 'h-96' : 'h-48'}`} />
                             ))}
                         </div>
                     )}

@@ -12,7 +12,7 @@ const Social = () => {
     const [searchResults, setSearchResults] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [searching, setSearching] = useState(false);
-    const [loading, setLoading] = useState(true);
+
     const [activeTab, setActiveTab] = useState('friends'); // 'friends', 'requests', 'search'
     const [requestFilter, setRequestFilter] = useState('received'); // 'received', 'sent'
 
@@ -22,7 +22,9 @@ const Social = () => {
             fetchPendingRequests();
             fetchSentRequests();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
+
 
     const fetchFriends = async () => {
         try {
@@ -32,7 +34,7 @@ const Social = () => {
         } catch (err) {
             console.error('Error fetching friends:', err);
         } finally {
-            setLoading(false);
+            // setLoading(false);
         }
     };
 
