@@ -48,7 +48,7 @@ export const getAlbumsService = async (userId) => {
         .select(`
             *,
             owner:profiles!user_id(id, username, avatar_url, full_name),
-            members:album_collaborators(user_id)
+            members:album_collaborators!album_id(user_id)
         `)
         .eq('user_id', userId);
 
@@ -67,7 +67,7 @@ export const getAlbumsService = async (userId) => {
             .select(`
                 *,
                 owner:profiles!user_id(id, username, avatar_url, full_name),
-                members:album_collaborators(user_id)
+                members:album_collaborators!album_id(user_id)
             `)
             .in('id', collabIds.map(c => c.album_id));
 
@@ -131,7 +131,7 @@ export const getAlbumByIdService = async (albumId) => {
         .select(`
             *,
             owner:profiles!user_id(id, username, avatar_url, full_name),
-            members:album_collaborators(
+            members:album_collaborators!album_id(
                 user_id, 
                 role, 
                 profile:profiles!user_id(id, username, avatar_url, full_name)
