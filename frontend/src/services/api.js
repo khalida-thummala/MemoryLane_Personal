@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Base API setup
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || '', // Empty for local proxy, production URL for deployed app
+    baseURL: import.meta.env.DEV ? 'http://localhost:5000' : (import.meta.env.VITE_API_URL || ''),
 });
 
 // Authentication services

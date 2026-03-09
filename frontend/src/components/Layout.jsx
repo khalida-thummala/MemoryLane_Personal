@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Sun, Moon, LogIn, UserPlus, Menu, X, Home, Clock, Image, Map as ReminisceIcon, User, LogOut, Globe, Users, Linkedin, Github, Mail } from 'lucide-react';
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import GlobalBackground from './GlobalBackground';
@@ -12,6 +12,7 @@ const Layout = ({ children }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const isHomePage = location.pathname === '/';
+    const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024 && !isHomePage);
 
     // Ensure sidebar is closed on home page (landing page)
