@@ -12,12 +12,17 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <ThemeProvider>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </ThemeProvider>
-  </StrictMode>,
-)
+try {
+  createRoot(document.getElementById('root')).render(
+    <StrictMode>
+      <ThemeProvider>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </ThemeProvider>
+    </StrictMode>,
+  )
+} catch (error) {
+  console.error("Critical rendering error:", error);
+  document.getElementById('root').innerHTML = `<div style="padding: 20px; color: red;"><h1>Critical Error</h1><pre>${error.message}</pre></div>`;
+}
