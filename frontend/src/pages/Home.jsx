@@ -74,7 +74,7 @@ const Home = () => {
                 >
                     <Link to={user ? "/timeline" : "/register"}>
                         <Button size="lg" className="gap-2 px-10 font-bold">
-                            {user ? "Go to My Dashboard" : "Start Your Journey"} <ChevronRight size={20} />
+                            Start Your Journey <ChevronRight size={20} />
                         </Button>
                     </Link>
                 </motion.div>
