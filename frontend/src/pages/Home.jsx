@@ -32,12 +32,6 @@ const Home = () => {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        if (user) {
-            navigate('/timeline');
-        }
-    }, [user, navigate]);
-
     return (
         <div className="flex flex-col gap-24 overflow-hidden">
             {/* Hero Section */}
