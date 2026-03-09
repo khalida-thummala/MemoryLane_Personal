@@ -14,10 +14,10 @@ const Layout = ({ children }) => {
     const isHomePage = location.pathname === '/';
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024 && !isHomePage);
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
         setIsSidebarOpen(false);
-        navigate('/'); // Redirect to landing page on logout
+        await logout();
+        navigate('/', { replace: true }); // Redirect to landing page on logout
     };
 
     const handleLinkClick = () => {
