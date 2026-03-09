@@ -1,12 +1,19 @@
 import { LogOut, Settings, User, Download, Shield, X, Check, Loader } from 'lucide-react';
 import { useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Profile = () => {
     const { user, logout, updateUser } = useContext(AuthContext);
+    const navigate = useNavigate();
     const [exporting, setExporting] = useState(false);
+
+    const handleProfileLogout = async () => {
+        await logout();
+        navigate('/', { replace: true });
+    };
 
     // Modals
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -145,7 +152,7 @@ const Profile = () => {
 
                     <div className="w-full h-px bg-gray-200 dark:bg-slate-800 my-4"></div>
 
-                    <button onClick={logout} className="w-full p-5 rounded-2xl flex items-center justify-center cursor-pointer bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-all group border border-transparent hover:border-red-500/30">
+                    <button onClick={handleProfileLogout} className="w-full p-5 rounded-2xl flex items-center justify-center cursor-pointer bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-all group border border-transparent hover:border-red-500/30">
                         <span className="font-bold flex items-center gap-3 text-lg"><LogOut className="group-hover:-translate-x-1 transition-transform" size={24} /> Logout Securely</span>
                     </button>
                 </div>

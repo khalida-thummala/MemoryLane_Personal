@@ -14,6 +14,13 @@ const Layout = ({ children }) => {
     const isHomePage = location.pathname === '/';
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024 && !isHomePage);
 
+    // Ensure sidebar is closed on home page (landing page)
+    useEffect(() => {
+        if (isHomePage) {
+            setIsSidebarOpen(false);
+        }
+    }, [isHomePage]);
+
     const handleLogout = async () => {
         setIsSidebarOpen(false);
         await logout();
@@ -193,7 +200,7 @@ const Layout = ({ children }) => {
                 </nav>
 
                 {/* Main Content Area */}
-                <main className={`flex-1 w-full mx-auto py-8 ${isHomePage ? '' : 'max-w-7xl px-4 sm:px-6 lg:px-8'}`}>
+                <main className={`flex-1 w-full mx-auto py-8 ${(isHomePage || isAuthPage) ? '' : 'max-w-7xl px-4 sm:px-6 lg:px-8'}`}>
                     {children}
                 </main>
 
