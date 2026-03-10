@@ -5,7 +5,7 @@ This directory contains the premium React-based frontend for **MemoryLane**. It 
 ---
 
 ## 🔗 Live Links
-- **🚀 Project URL:** [https://memorylane-frontend.netlify.app/](https://memorylane-frontend.netlify.app/)
+- **🚀 Project URL:** [https://memory-lane-personal-phi.vercel.app/](https://memory-lane-personal-phi.vercel.app/)
 - **🎥 Video Demo:** [Watch the Walkthrough](https://drive.google.com/file/d/1bGCeQwjSs8WGnQ7oiTcPbq8ExmYGToiy/view?usp=sharing)
 - **⚙️ API Endpoint:** `https://memorylane-personal.onrender.com`
 
