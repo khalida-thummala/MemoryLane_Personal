@@ -29,8 +29,14 @@ const FeatureCard = ({ icon: Icon, title, description, delay }) => (
 );
 
 const Home = () => {
-    const { user } = useContext(AuthContext);
+    const { user, loading } = useContext(AuthContext);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!loading && user) {
+            navigate('/timeline', { replace: true });
+        }
+    }, [user, loading, navigate]);
 
     return (
         <div className="flex flex-col gap-24 overflow-hidden">
