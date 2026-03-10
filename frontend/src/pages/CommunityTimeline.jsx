@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Globe, Calendar, MapPin, Heart, MessageSquare, Loader2, Star,
     Share2, Search, Send, UserPlus, UserMinus, X, ChevronLeft,
-    MoreHorizontal, Edit3, Trash2, CornerDownRight, Check, Image as ImageIcon
+    MoreHorizontal, Edit3, Trash2, CornerDownRight, Check, Image as ImageIcon, Play
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import ShareOptions from '../components/ShareOptions';
@@ -391,15 +391,32 @@ const CommunityTimeline = () => {
                                 transition={{ delay: index * 0.05 }}
                                 className="group/card flex flex-col h-full bg-white dark:bg-slate-900 rounded-[2rem] shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 transition-all border border-gray-100 dark:border-slate-800 overflow-hidden"
                             >
-                                {/* Media Section - Image on top */}
+                                {/* Media Section - Render Image or Video */}
                                 <div className="relative aspect-[4/5] overflow-hidden bg-slate-100 dark:bg-slate-800">
                                     {memory.photos?.length > 0 ? (
                                         <img
                                             src={getMediaUrl(memory.photos[0])}
                                             alt={memory.title}
-                                            onClick={() => setSelectedImage({ url: memory.photos[0], index: 0, all: memory.photos })}
+                                            onClick={() => setSelectedImage({ type: 'image', url: memory.photos[0], all: memory.photos })}
                                             className="w-full h-full object-cover cursor-zoom-in group-hover/card:scale-110 transition-transform duration-700"
                                         />
+                                    ) : memory.videos?.length > 0 ? (
+                                        <div className="relative w-full h-full group/video">
+                                            <video
+                                                src={getMediaUrl(memory.videos[0])}
+                                                className="w-full h-full object-cover"
+                                                muted
+                                                playsInline
+                                                onMouseOver={e => e.target.play()}
+                                                onMouseOut={e => { e.target.pause(); e.target.currentTime = 0; }}
+                                            />
+                                            <div
+                                                onClick={() => setSelectedImage({ type: 'video', url: memory.videos[0] })}
+                                                className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/video:bg-black/40 transition-colors cursor-zoom-in"
+                                            >
+                                                <Play size={48} className="text-white fill-white opacity-80 group-hover/video:opacity-100 scale-90 group-hover/video:scale-110 transition-all" />
+                                            </div>
+                                        </div>
                                     ) : (
                                         <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2">
                                             <ImageIcon size={40} />
@@ -563,13 +580,23 @@ const CommunityTimeline = () => {
                     >
                         <button onClick={() => setSelectedImage(null)} className="absolute top-8 right-8 z-[210] p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all hover:rotate-90"><X size={28} /></button>
                         <button onClick={() => setSelectedImage(null)} className="absolute top-8 left-8 z-[210] flex items-center gap-2 text-white font-black uppercase tracking-widest text-xs px-5 py-3 bg-white/10 rounded-full hover:bg-white/20 transition-all"><ChevronLeft size={18} /> Back</button>
-                        <motion.img
-                            initial={{ scale: 0.9 }}
-                            animate={{ scale: 1 }}
-                            src={getMediaUrl(selectedImage.url)}
-                            className="max-w-[90vw] max-h-[80vh] object-contain rounded-3xl shadow-2xl"
-                            onClick={e => e.stopPropagation()}
-                        />
+                        {selectedImage.type === 'video' ? (
+                            <video
+                                src={getMediaUrl(selectedImage.url)}
+                                controls
+                                autoPlay
+                                className="max-w-[90vw] max-h-[80vh] rounded-3xl shadow-2xl"
+                                onClick={e => e.stopPropagation()}
+                            />
+                        ) : (
+                            <motion.img
+                                initial={{ scale: 0.9 }}
+                                animate={{ scale: 1 }}
+                                src={getMediaUrl(selectedImage.url)}
+                                className="max-w-[90vw] max-h-[80vh] object-contain rounded-3xl shadow-2xl"
+                                onClick={e => e.stopPropagation()}
+                            />
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
