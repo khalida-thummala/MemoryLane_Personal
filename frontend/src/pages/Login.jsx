@@ -34,7 +34,7 @@ const Login = () => {
                 avatar: data.user.user_metadata?.avatar_url || ''
             };
             login(userData);
-            navigate('/timeline');
+            navigate('/');
         } catch (err) {
             setError(err.message || 'Login failed. Please check your credentials.');
         } finally {

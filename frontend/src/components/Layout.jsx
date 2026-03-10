@@ -61,7 +61,7 @@ const Layout = ({ children }) => {
             {/* Left Sidebar Drawer */}
             <aside className={`fixed top-0 left-0 h-full w-72 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 shadow-2xl z-[70] transform transition-transform duration-300 ease-in-out flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <div className="p-6 flex items-center justify-between border-b border-gray-100 dark:border-slate-800">
-                    <Link to={user ? "/timeline" : "/"} onClick={handleLinkClick} className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
+                    <Link to="/" onClick={handleLinkClick} className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
                         MemoryLane
                     </Link>
                     <button onClick={() => setIsSidebarOpen(false)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
@@ -155,7 +155,7 @@ const Layout = ({ children }) => {
                         >
                             <Menu size={24} className="text-indigo-600 dark:text-indigo-400" />
                         </button>
-                        <Link to={user ? "/timeline" : "/"} className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600 hidden sm:block">
+                        <Link to="/" className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600 hidden sm:block">
                             MemoryLane
                         </Link>
                     </div>
