@@ -24,8 +24,12 @@ const Layout = ({ children }) => {
 
     const handleLogout = async () => {
         setIsSidebarOpen(false);
-        await logout();
-        navigate('/register', { replace: true }); // Redirect to register page on logout
+        try {
+            await logout();
+        } catch (err) {
+            console.error(err);
+        }
+        window.location.href = '/';
     };
 
     const handleLinkClick = () => {
