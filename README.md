@@ -109,8 +109,8 @@ graph TD
 ## 🔑 Test Account
 > [!NOTE]
 > Use these credentials to explore the premium features instantly.
-- **Email:** `test@example.com`
-- **Password:** `TestPassword123!`
+- **Email:** `testuser@example.com`
+- **Password:** `123456`
 
 ---
 
