@@ -12,7 +12,7 @@ const Profile = () => {
 
     const handleProfileLogout = async () => {
         await logout();
-        navigate('/', { replace: true });
+        navigate('/register', { replace: true });
     };
 
     // Modals
