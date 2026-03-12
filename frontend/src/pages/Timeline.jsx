@@ -355,7 +355,8 @@ const Timeline = () => {
             <div className="flex justify-between items-center mb-10">
                 <div className="flex flex-col">
                     <h1 className="text-4xl font-extrabold flex items-center gap-3 text-indigo-600 dark:text-indigo-400">
-                        <Clock className="text-indigo-600" /> My Timeline
+                        <Clock className="text-indigo-600 hidden sm:block" /> 
+                        Welcome back, {user?.name?.split(' ')[0] || user?.username || 'Explorer'}!
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">A curated collection of your life's best moments</p>
                 </div>

@@ -45,7 +45,7 @@ export const sendFriendRequest = async (req, res) => {
             user_id: recipientId,
             sender_id: senderId,
             type: 'friend_request',
-            content: `${req.user.username} sent you a friend request.`
+            content: `${req.user.user_metadata?.full_name || req.user.user_metadata?.name || req.user.email} sent you a friend request.`
         });
 
         return res.status(201).json({ message: 'Friend request sent' });
@@ -82,7 +82,7 @@ export const acceptFriendRequest = async (req, res) => {
             user_id: request.sender_id,
             sender_id: req.user.id,
             type: 'friend_accept',
-            content: `${req.user.username} accepted your friend request.`
+            content: `${req.user.user_metadata?.full_name || req.user.user_metadata?.name || req.user.email} accepted your friend request.`
         });
 
         return res.json({ message: 'Friend request accepted' });

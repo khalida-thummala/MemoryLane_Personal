@@ -11,8 +11,17 @@ const Profile = () => {
     const [exporting, setExporting] = useState(false);
 
     const handleProfileLogout = async () => {
-        await logout();
-        navigate('/register', { replace: true });
+        try {
+            await logout();
+        } catch (error) {
+            console.error("Error during profile logout:", error);
+        }
+        // Fallback in case ProtectedRoute doesn't trigger quickly enough
+        setTimeout(() => {
+            if (window.location.pathname !== '/register') {
+                navigate('/register', { replace: true });
+            }
+        }, 100);
     };
 
     // Modals
