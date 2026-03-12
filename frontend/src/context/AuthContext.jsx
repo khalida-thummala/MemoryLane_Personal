@@ -146,6 +146,45 @@ export const AuthProvider = ({ children }) => {
         };
     }, []);
 
+    const signIn = async (email, password) => {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('username, full_name, avatar_url')
+            .eq('id', data.user.id)
+            .single();
+
+        const userData = {
+            id: data.user.id,
+            email: data.user.email,
+            token: data.session.access_token,
+            name: profile?.full_name || profile?.username || data.user.user_metadata?.full_name || data.user.user_metadata?.name || '',
+            username: profile?.username || '',
+            avatar: profile?.avatar_url || data.user.user_metadata?.avatar_url || ''
+        };
+        
+        setUser(userData);
+        localStorage.setItem('userInfo', JSON.stringify(userData));
+        return data;
+    };
+
+    const signUp = async (name, email, password) => {
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: name,
+                    name: name
+                }
+            }
+        });
+        if (error) throw error;
+        return data;
+    };
+
     const login = (userData) => {
         setUser(userData);
         localStorage.setItem('userInfo', JSON.stringify(userData));
@@ -165,7 +204,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading, updateUser }}>
+        <AuthContext.Provider value={{ user, login, logout, loading, updateUser, signIn, signUp }}>
             {children}
         </AuthContext.Provider>
     );

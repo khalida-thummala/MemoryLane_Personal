@@ -1,11 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 
-import { authService } from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 
 
 const Register = () => {
+    const { signUp } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const [name, setName] = useState('');
@@ -24,13 +25,13 @@ const Register = () => {
         setLoading(true);
 
         try {
-            await authService.register({ name, email, password });
-            setSuccess('Account created successfully! Redirecting to login...');
+            await signUp(name, email, password);
+            setSuccess('Account created successfully! Please check your email for verification (if enabled) or proceed to login.');
             setTimeout(() => {
                 navigate('/login');
-            }, 2000);
+            }, 3000);
         } catch (err) {
-            setError(err.response?.data?.message || 'Registration failed');
+            setError(err.message || 'Registration failed');
         } finally {
             setLoading(false);
         }

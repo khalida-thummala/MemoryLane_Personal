@@ -2,11 +2,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
-import { supabase } from '../services/supabase';
 import { LogIn, Mail, Lock } from 'lucide-react';
 
 const Login = () => {
-    const { login } = useContext(AuthContext);
+    const { login, signIn } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const [email, setEmail] = useState('');
@@ -22,18 +21,7 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
-            if (authError) throw authError;
-
-            // Build user object consistent with AuthContext shape
-            const userData = {
-                id: data.user.id,
-                email: data.user.email,
-                token: data.session.access_token,
-                name: data.user.user_metadata?.full_name || data.user.user_metadata?.name || '',
-                avatar: data.user.user_metadata?.avatar_url || ''
-            };
-            login(userData);
+            await signIn(email, password);
             navigate('/timeline');
         } catch (err) {
             setError(err.message || 'Login failed. Please check your credentials.');
