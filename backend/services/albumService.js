@@ -237,7 +237,7 @@ export const inviteCollaboratorService = async (albumId, userId) => {
         .insert([{
             album_id: albumId,
             user_id: userId,
-            role: 'editor',
+            role: 'contributor',
             status: 'pending'
         }]);
 

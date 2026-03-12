@@ -95,7 +95,9 @@ const NotificationDropdown = () => {
                                             </div>
                                             <div className="flex-1">
                                                 <p className={`text-sm leading-snug mb-2 ${n.is_read ? 'text-slate-600 dark:text-slate-400' : 'text-slate-900 dark:text-white font-bold'}`}>
-                                                    {n.content}
+                                                    {n.content?.startsWith('undefined ') 
+                                                        ? n.content.replace('undefined ', (n.profiles?.username || 'Someone') + ' ') 
+                                                        : n.content}
                                                 </p>
                                                 <span className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1">
                                                     <Clock size={10} /> {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
